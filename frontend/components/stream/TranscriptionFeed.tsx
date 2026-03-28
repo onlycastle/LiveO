@@ -2,15 +2,19 @@
 
 import { useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { transcriptLines } from "@/lib/mock-data";
+import type { TranscriptLine } from "@/lib/types";
 
-export function TranscriptionFeed() {
+interface TranscriptionFeedProps {
+  lines: TranscriptLine[];
+}
+
+export function TranscriptionFeed({ lines }: TranscriptionFeedProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const lastLineId = transcriptLines[transcriptLines.length - 1]?.id;
+  const lastLineId = lines[lines.length - 1]?.id;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  }, [lastLineId]);
 
   return (
     <div className="flex flex-col h-full">
@@ -22,12 +26,17 @@ export function TranscriptionFeed() {
           </span>
         </div>
         <span className="text-[10px] font-mono text-muted-foreground/60">
-          WHISPER v3
+          {lines.length > 0 ? `${lines.length} lines` : "waiting..."}
         </span>
       </div>
       <ScrollArea className="flex-1 px-3">
         <div className="py-2 space-y-1">
-          {transcriptLines.map((line) => {
+          {lines.length === 0 && (
+            <div className="text-xs text-muted-foreground/40 text-center py-4">
+              Transcription will appear here when audio is detected
+            </div>
+          )}
+          {lines.map((line) => {
             const isLast = line.id === lastLineId;
             const isHighlight = line.isHighlight;
 

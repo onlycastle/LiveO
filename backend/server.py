@@ -24,10 +24,12 @@ from .models import (
 )
 from .pipeline import Pipeline
 from .ring_buffer import RingBuffer
+from .transcript import TranscriptLine, TranscriptProcessor
 from .ws_manager import manager, set_event_loop
 
 
 _pipeline: Pipeline | None = None
+_transcript_proc: TranscriptProcessor | None = None
 _start_time: float = 0
 _capture_method: str = ""
 _error: str | None = None
@@ -41,6 +43,8 @@ _settings = Settings()
 async def lifespan(app: FastAPI):
     set_event_loop(asyncio.get_running_loop())
     yield
+    if _transcript_proc:
+        _transcript_proc.stop()
     if _pipeline:
         _pipeline.stop()
 
@@ -63,6 +67,20 @@ def _on_segment(event: SegmentReadyEvent) -> None:
         "timestampEnd": event.timestamp_end,
         "duration": event.duration,
     })
+    if _transcript_proc and event.audio_path:
+        _transcript_proc.submit(event.audio_path, event.timestamp_start)
+
+
+def _on_transcript(line: TranscriptLine) -> None:
+    manager.broadcast_sync("transcript_update", {
+        "id": line.id,
+        "timestamp": line.timestamp,
+        "text": line.text,
+        "start": line.start,
+        "end": line.end,
+        "confidence": line.confidence,
+        "isHighlight": line.is_highlight,
+    })
 
 
 # ── Stream Control ──────────────────────────────────────────
@@ -70,7 +88,7 @@ def _on_segment(event: SegmentReadyEvent) -> None:
 
 @app.post("/api/stream/start")
 async def stream_start(req: StreamStartRequest) -> StreamStatus:
-    global _pipeline, _start_time, _capture_method, _error
+    global _pipeline, _transcript_proc, _start_time, _capture_method, _error
     if _pipeline and _pipeline.capture.is_alive():
         raise HTTPException(400, "Stream already running")
 
@@ -89,10 +107,15 @@ async def stream_start(req: StreamStartRequest) -> StreamStatus:
     _pipeline = Pipeline(capture=capture, ring_buffer=ring_buffer)
     _pipeline.on_segment(_on_segment)
 
+    _transcript_proc = TranscriptProcessor(on_transcript=_on_transcript)
+    _transcript_proc.start()
+
     try:
         _pipeline.start()
     except Exception as exc:
         _error = str(exc)
+        _transcript_proc.stop()
+        _transcript_proc = None
         raise HTTPException(500, str(exc))
 
     _start_time = time.time()
@@ -113,7 +136,7 @@ async def stream_start(req: StreamStartRequest) -> StreamStatus:
 
 @app.post("/api/stream/stop")
 async def stream_stop() -> StreamStatus:
-    global _pipeline, _start_time
+    global _pipeline, _transcript_proc, _start_time
     if not _pipeline:
         raise HTTPException(400, "No stream running")
 
@@ -121,6 +144,10 @@ async def stream_stop() -> StreamStatus:
     seg_count = len(_pipeline.ring_buffer)
     _pipeline.stop()
     _pipeline = None
+
+    if _transcript_proc:
+        _transcript_proc.stop()
+        _transcript_proc = None
 
     await manager.broadcast("stream_status", {"isLive": False, "elapsed": elapsed})
 

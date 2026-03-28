@@ -7,8 +7,9 @@ import { LeftPanel } from "@/components/layout/LeftPanel";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { ShortsPreviewModal } from "@/components/shorts/ShortsPreviewModal";
-import { shortsCandidates as initialCandidates, transcriptLines } from "@/lib/mock-data";
-import type { ShortsCandidate } from "@/lib/types";
+import { useWebSocket } from "@/lib/use-websocket";
+import { shortsCandidates as initialCandidates } from "@/lib/mock-data";
+import type { ShortsCandidate, TranscriptLine } from "@/lib/types";
 
 export default function Home() {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
@@ -16,27 +17,39 @@ export default function Home() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<ShortsCandidate[]>(initialCandidates);
+  const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
+
+  const handleWsMessage = useCallback((type: string, data: Record<string, unknown>) => {
+    if (type === "transcript_update") {
+      const line: TranscriptLine = {
+        id: data.id as string,
+        timestamp: data.timestamp as string,
+        text: data.text as string,
+        isHighlight: data.isHighlight as boolean | undefined,
+      };
+      setTranscriptLines((prev) => [...prev.slice(-199), line]);
+    }
+  }, []);
+
+  useWebSocket(handleWsMessage);
 
   const handleManualCapture = useCallback((holdDurationMs: number) => {
-    // Calculate how many transcript lines the hold covers (~3s per line)
     const holdSeconds = holdDurationMs / 1000;
     const linesForHold = Math.max(2, Math.ceil(holdSeconds / 3));
-
-    // Anchor at "current" position + extend by hold duration + buffer
-    const bufferLines = 2; // extra context before/after
+    const bufferLines = 2;
     const endIdx = transcriptLines.length - 1;
     const startIdx = Math.max(0, endIdx - linesForHold - bufferLines);
     const startLine = transcriptLines[startIdx];
     const endLine = transcriptLines[endIdx];
     const anchorLine = transcriptLines[Math.max(0, endIdx - Math.floor(linesForHold / 2))];
 
-    // Build captured transcript snippet
+    if (!startLine || !endLine || !anchorLine) return;
+
     const capturedText = transcriptLines
       .slice(startIdx, endIdx + 1)
       .map((l) => l.text)
       .join(" ");
 
-    // Duration based on hold time + buffer
     const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
     const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
 
@@ -46,7 +59,7 @@ export default function Home() {
       endTime: endLine.timestamp,
       duration: durationStr,
       thumbnailUrl: "",
-      title: `📌 수동 캡처 — "${anchorLine.text.slice(0, 24)}..."`,
+      title: `Manual capture — "${anchorLine.text.slice(0, 24)}..."`,
       indicators: ["manual"],
       confidence: 100,
       status: "pending",
@@ -55,7 +68,7 @@ export default function Home() {
     };
 
     setCandidates((prev) => [newCandidate, ...prev]);
-  }, []);
+  }, [transcriptLines]);
 
   if (!streamUrl) {
     return <LandingScreen onConnect={setStreamUrl} />;
@@ -67,7 +80,7 @@ export default function Home() {
 
       <div className="flex-1 flex min-h-0">
         <div className="w-[40%] min-w-[480px] border-r border-border">
-          <LeftPanel onCapture={handleManualCapture} />
+          <LeftPanel onCapture={handleManualCapture} transcriptLines={transcriptLines} />
         </div>
         <div className="flex-1 min-w-[640px]">
           <RightPanel

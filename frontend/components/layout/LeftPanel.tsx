@@ -4,8 +4,14 @@ import { StreamEmbed } from "@/components/stream/StreamEmbed";
 import { IndicatorDashboard } from "@/components/indicators/IndicatorDashboard";
 import { TranscriptionFeed } from "@/components/stream/TranscriptionFeed";
 import { ManualCaptureButton } from "@/components/indicators/ManualCaptureButton";
+import type { TranscriptLine } from "@/lib/types";
 
-export function LeftPanel({ onCapture }: { onCapture: (holdDurationMs: number) => void }) {
+interface LeftPanelProps {
+  onCapture: (holdDurationMs: number) => void;
+  transcriptLines: TranscriptLine[];
+}
+
+export function LeftPanel({ onCapture, transcriptLines }: LeftPanelProps) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Stream — fixed, never clipped */}
@@ -25,7 +31,7 @@ export function LeftPanel({ onCapture }: { onCapture: (holdDurationMs: number) =
 
       {/* Transcription — fills remaining, scrolls internally */}
       <div className="flex-1 min-h-[120px] border-t border-border overflow-hidden">
-        <TranscriptionFeed />
+        <TranscriptionFeed lines={transcriptLines} />
       </div>
     </div>
   );

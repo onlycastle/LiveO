@@ -14,6 +14,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+stt = [
+    "torch>=2.0",
+    "torchaudio>=2.0",
+    "deepgram-sdk>=3.0",
+]
+stt-local = [
+    "torch>=2.0",
+    "torchaudio>=2.0",
+    "faster-whisper>=1.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
