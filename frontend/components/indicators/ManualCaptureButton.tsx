@@ -8,41 +8,60 @@ export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs:
   const [justCaptured, setJustCaptured] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
+  const isHoldingRef = useRef(false);
+
+  const clearHoldInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
 
   const startHold = useCallback(() => {
     setIsHolding(true);
+    isHoldingRef.current = true;
     setHoldSeconds(0);
     startTimeRef.current = Date.now();
+    clearHoldInterval();
     intervalRef.current = setInterval(() => {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       setHoldSeconds(Math.floor(elapsed));
-    }, 100);
-  }, []);
+    }, 200);
+  }, [clearHoldInterval]);
 
   const stopHold = useCallback(() => {
+    if (!isHoldingRef.current) return;
+    isHoldingRef.current = false;
     const duration = Date.now() - startTimeRef.current;
-    if (duration > 500) {
-      // Minimum 0.5s hold to register
+    clearHoldInterval();
+    setIsHolding(false);
+    setHoldSeconds(0);
+
+    // Minimum 1 second hold to register a capture
+    if (duration >= 1000) {
       onCapture(duration);
       setJustCaptured(true);
       setTimeout(() => setJustCaptured(false), 2000);
     }
+  }, [onCapture, clearHoldInterval]);
+
+  const cancelHold = useCallback(() => {
+    // Mouse leave just cancels without capturing
+    if (!isHoldingRef.current) return;
+    isHoldingRef.current = false;
+    clearHoldInterval();
     setIsHolding(false);
     setHoldSeconds(0);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  }, [onCapture]);
+  }, [clearHoldInterval]);
 
-  const formatHold = (s: number) => {
-    if (s < 1) return "0s";
-    return `${s}s`;
-  };
+  const formatHold = (s: number) => (s < 1 ? "0s" : `${s}s`);
 
   return (
     <div className="px-3 py-3">
       <button
         onMouseDown={startHold}
         onMouseUp={stopHold}
-        onMouseLeave={stopHold}
+        onMouseLeave={cancelHold}
         className={`relative w-full h-12 rounded-lg font-mono text-xs font-bold uppercase tracking-widest transition-all overflow-hidden ${
           justCaptured
             ? "bg-neon-lime/15 border-2 border-neon-lime text-neon-lime"
