@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/check-prereqs.sh",
+            "timeout": 120,
+            "statusMessage": "Checking prerequisites..."
+          }
+        ]
+      }
+    ]
+  }
+}
