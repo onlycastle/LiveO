@@ -5,7 +5,7 @@ import { IndicatorDashboard } from "@/components/indicators/IndicatorDashboard";
 import { TranscriptionFeed } from "@/components/stream/TranscriptionFeed";
 import { ManualCaptureButton } from "@/components/indicators/ManualCaptureButton";
 
-export function LeftPanel({ onCapture }: { onCapture: () => void }) {
+export function LeftPanel({ onCapture }: { onCapture: (holdDurationMs: number) => void }) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Fixed top: Stream + Indicators + Capture */}

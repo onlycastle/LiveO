@@ -44,7 +44,7 @@ export function LandingScreen({
           </div>
           <div>
             <h1 className="font-mono text-2xl font-bold tracking-wider text-foreground">
-              SHORTS<span className="text-neon-lime">FACTORY</span>
+              LIVE<span className="text-neon-lime">O</span>
             </h1>
             <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">
               Live Stream → Shorts Generator
@@ -123,7 +123,7 @@ export function LandingScreen({
 
       {/* Footer */}
       <div className="absolute bottom-6 text-[10px] font-mono text-muted-foreground/30 tracking-wider">
-        HACKATHON 2026 — REAL-TIME SHORTS GENERATION
+        LIVEO — HACKATHON 2026
       </div>
     </div>
   );

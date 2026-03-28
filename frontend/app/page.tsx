@@ -17,13 +17,18 @@ export default function Home() {
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<ShortsCandidate[]>(initialCandidates);
 
-  const handleManualCapture = useCallback(() => {
-    // Find the latest highlight transcript line as anchor point
-    const now = transcriptLines[transcriptLines.length - 3]; // simulate "current" position
-    const startIdx = Math.max(0, transcriptLines.length - 6);
-    const endIdx = Math.min(transcriptLines.length - 1, transcriptLines.length - 1);
+  const handleManualCapture = useCallback((holdDurationMs: number) => {
+    // Calculate how many transcript lines the hold covers (~3s per line)
+    const holdSeconds = holdDurationMs / 1000;
+    const linesForHold = Math.max(2, Math.ceil(holdSeconds / 3));
+
+    // Anchor at "current" position + extend by hold duration + buffer
+    const bufferLines = 2; // extra context before/after
+    const endIdx = transcriptLines.length - 1;
+    const startIdx = Math.max(0, endIdx - linesForHold - bufferLines);
     const startLine = transcriptLines[startIdx];
     const endLine = transcriptLines[endIdx];
+    const anchorLine = transcriptLines[Math.max(0, endIdx - Math.floor(linesForHold / 2))];
 
     // Build captured transcript snippet
     const capturedText = transcriptLines
@@ -31,13 +36,17 @@ export default function Home() {
       .map((l) => l.text)
       .join(" ");
 
+    // Duration based on hold time + buffer
+    const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
+    const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
+
     const newCandidate: ShortsCandidate = {
       id: `manual-${Date.now()}`,
       startTime: startLine.timestamp,
       endTime: endLine.timestamp,
-      duration: "0:30",
+      duration: durationStr,
       thumbnailUrl: "",
-      title: `📌 수동 캡처 — "${now.text.slice(0, 20)}..."`,
+      title: `📌 수동 캡처 — "${anchorLine.text.slice(0, 24)}..."`,
       indicators: ["manual"],
       confidence: 100,
       status: "pending",

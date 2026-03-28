@@ -19,7 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SHORTS FACTORY — Live Stream Shorts Generator",
+  title: "LiveO — Live Stream Shorts Generator",
   description: "Real-time YouTube Shorts generator from live game streams",
 };
 

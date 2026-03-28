@@ -29,7 +29,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
           </svg>
         </div>
         <span className="font-mono text-sm font-bold tracking-wider text-foreground">
-          SHORTS<span className="text-neon-lime">FACTORY</span>
+          LIVE<span className="text-neon-lime">O</span>
         </span>
       </div>
 
