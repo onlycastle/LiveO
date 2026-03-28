@@ -9,7 +9,7 @@ class TestStreamEvent:
         assert StreamEvent.STREAM_ERROR.value == "stream_error"
 
     def test_enum_members_count(self):
-        assert len(StreamEvent) == 4
+        assert len(StreamEvent) == 12
 
     def test_enum_from_value(self):
         assert StreamEvent("stream_started") is StreamEvent.STREAM_STARTED

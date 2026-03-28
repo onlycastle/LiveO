@@ -81,5 +81,13 @@ def main() -> None:
     print(f"Done. {len(ring_buffer)} segments in buffer.")
 
 
+def serve() -> None:
+    import uvicorn
+    uvicorn.run("backend.server:app", host="0.0.0.0", port=8000, reload=True)
+
+
 if __name__ == "__main__":
-    main()
+    if "--serve" in sys.argv:
+        serve()
+    else:
+        main()

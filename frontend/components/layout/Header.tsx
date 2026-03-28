@@ -1,16 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
-  const [elapsed, setElapsed] = useState(0);
-  const [connected, setConnected] = useState(true);
+interface HeaderProps {
+  onSettingsOpen: () => void;
+  isLive?: boolean;
+  connected?: boolean;
+  elapsed?: number;
+  shortsCount?: number;
+  queueCount?: number;
+}
 
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+export function Header({
+  onSettingsOpen,
+  isLive = true,
+  connected = true,
+  elapsed = 0,
+  shortsCount = 0,
+  queueCount = 0,
+}: HeaderProps) {
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -77,7 +85,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
             SHORTS
           </span>
           <span className="font-mono text-sm text-neon-cyan neon-text-cyan">
-            3
+            {shortsCount}
           </span>
         </div>
 
@@ -87,7 +95,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
           <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
             QUEUE
           </span>
-          <span className="font-mono text-sm text-neon-amber">2</span>
+          <span className="font-mono text-sm text-neon-amber">{queueCount}</span>
         </div>
       </div>
 

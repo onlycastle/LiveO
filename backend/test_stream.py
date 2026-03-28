@@ -34,16 +34,20 @@ BOLD = "\033[1m"
 RESET = "\033[0m"
 
 
+def _print(msg: str) -> None:
+    print(msg, flush=True)
+
+
 def log_pass(msg: str) -> None:
-    print(f"  {GREEN}PASS{RESET}  {msg}")
+    _print(f"  {GREEN}PASS{RESET}  {msg}")
 
 
 def log_fail(msg: str) -> None:
-    print(f"  {RED}FAIL{RESET}  {msg}")
+    _print(f"  {RED}FAIL{RESET}  {msg}")
 
 
 def log_info(msg: str) -> None:
-    print(f"  {YELLOW}INFO{RESET}  {msg}")
+    _print(f"  {YELLOW}INFO{RESET}  {msg}")
 
 
 def probe_segment(path: str) -> dict:
@@ -76,14 +80,14 @@ def run_test(url: str, duration: int, segment_duration: float) -> bool:
             log_fail(msg)
         return condition
 
-    print(f"\n{BOLD}=== LiveO 스트리밍 캡처 테스트 ==={RESET}")
-    print(f"  URL:      {url}")
-    print(f"  Duration: {duration}s")
-    print(f"  Segment:  {segment_duration}s")
-    print(f"  Output:   {output_dir}\n")
+    _print(f"\n{BOLD}=== LiveO 스트리밍 캡처 테스트 ==={RESET}")
+    _print(f"  URL:      {url}")
+    _print(f"  Duration: {duration}s")
+    _print(f"  Segment:  {segment_duration}s")
+    _print(f"  Output:   {output_dir}\n")
 
     # 1. URL 해석
-    print(f"{BOLD}[1/5] URL 해석 (yt-dlp --get-url){RESET}")
+    _print(f"{BOLD}[1/5] URL 해석 (yt-dlp --get-url){RESET}")
     cap = YtdlpDemoCapture(url)
     try:
         t0 = time.time()
@@ -97,7 +101,7 @@ def run_test(url: str, duration: int, segment_duration: float) -> bool:
         return False
 
     # 2. 파이프라인 실행
-    print(f"\n{BOLD}[2/5] 파이프라인 실행 ({duration}s 캡처){RESET}")
+    _print(f"\n{BOLD}[2/5] 파이프라인 실행 ({duration}s 캡처){RESET}")
     ring = RingBuffer(max_duration_sec=300)
     pipeline = Pipeline(
         capture=YtdlpDemoCapture(url),
@@ -119,7 +123,7 @@ def run_test(url: str, duration: int, segment_duration: float) -> bool:
     log_info(f"실제 실행 시간: {elapsed:.1f}s")
 
     # 3. 세그먼트 생성 확인
-    print(f"\n{BOLD}[3/5] 세그먼트 생성 확인{RESET}")
+    _print(f"\n{BOLD}[3/5] 세그먼트 생성 확인{RESET}")
     segments = sorted(
         [f for f in os.listdir(output_dir) if f.endswith(".ts")]
     )
@@ -138,7 +142,7 @@ def run_test(url: str, duration: int, segment_duration: float) -> bool:
         check(evt.duration > 0, f"duration > 0 ({evt.duration:.1f}s)")
 
     # 4. 영상 품질 검증 (ffprobe)
-    print(f"\n{BOLD}[4/5] 영상 품질 검증 (ffprobe){RESET}")
+    _print(f"\n{BOLD}[4/5] 영상 품질 검증 (ffprobe){RESET}")
     if segments:
         seg_path = os.path.join(output_dir, segments[0])
         seg_size = os.path.getsize(seg_path)
@@ -171,16 +175,49 @@ def run_test(url: str, duration: int, segment_duration: float) -> bool:
             else:
                 log_info(f"숏폼 최소 권장(1080p) 미달: {width}x{height}")
 
-    # 5. 정리
-    print(f"\n{BOLD}[5/5] 정리{RESET}")
+    # 5. 영상 Export
+    _print(f"\n{BOLD}[5/6] 영상 Export{RESET}")
+    export_dir = "/tmp/liveo_export"
+    os.makedirs(export_dir, exist_ok=True)
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    export_path = os.path.join(export_dir, f"test_{timestamp}.mp4")
+
+    if segments:
+        concat_file = os.path.join(output_dir, "concat.txt")
+        with open(concat_file, "w") as f:
+            for seg in segments:
+                f.write(f"file '{os.path.join(output_dir, seg)}'\n")
+        result = subprocess.run(
+            [
+                "ffmpeg", "-y", "-f", "concat", "-safe", "0",
+                "-i", concat_file,
+                "-c", "copy",
+                export_path,
+            ],
+            capture_output=True,
+        )
+        exported = result.returncode == 0 and os.path.exists(export_path)
+        if exported:
+            size_mb = os.path.getsize(export_path) / (1024 * 1024)
+            check(True, f"Export 완료: {export_path} ({size_mb:.1f}MB)")
+        else:
+            check(False, "Export 실패")
+    else:
+        check(False, "세그먼트 없음 — Export 불가")
+
+    # 6. 정리
+    _print(f"\n{BOLD}[6/6] 정리{RESET}")
     shutil.rmtree(output_dir, ignore_errors=True)
-    check(not os.path.exists(output_dir), "임시 디렉토리 정리 완료")
+    check(not os.path.exists(output_dir), "임시 세그먼트 디렉토리 정리 완료")
+    log_info(f"Export 파일 유지: {export_path}")
 
     # 결과
-    print(f"\n{BOLD}=== 결과 ==={RESET}")
-    print(f"  통과: {GREEN}{passed}{RESET}/{total}")
+    _print(f"\n{BOLD}=== 결과 ==={RESET}")
+    _print(f"  통과: {GREEN}{passed}{RESET}/{total}")
     if failed:
-        print(f"  실패: {RED}{failed}{RESET}/{total}")
+        _print(f"  실패: {RED}{failed}{RESET}/{total}")
+    if segments:
+        _print(f"\n  {BOLD}확인용 영상: {export_path}{RESET}")
     print()
 
     return failed == 0
