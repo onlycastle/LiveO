@@ -1,24 +1,16 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-interface HeaderProps {
-  onSettingsOpen: () => void;
-  isLive?: boolean;
-  connected?: boolean;
-  elapsed?: number;
-  shortsCount?: number;
-  queueCount?: number;
-}
+export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
+  const [elapsed, setElapsed] = useState(0);
+  const [connected, setConnected] = useState(true);
 
-export function Header({
-  onSettingsOpen,
-  isLive = true,
-  connected = true,
-  elapsed = 0,
-  shortsCount = 0,
-  queueCount = 0,
-}: HeaderProps) {
+  useEffect(() => {
+    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -70,7 +62,7 @@ export function Header({
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
-            REC
+            SESSION
           </span>
           <div className="w-2 h-2 rounded-full bg-neon-red animate-neon-pulse" />
           <span className="font-mono text-sm text-foreground tabular-nums">
@@ -84,8 +76,8 @@ export function Header({
           <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
             SHORTS
           </span>
-          <span className="font-mono text-sm text-neon-cyan neon-text-cyan">
-            {shortsCount}
+          <span className="font-mono text-sm text-neon-lime">
+            3
           </span>
         </div>
 
@@ -95,7 +87,7 @@ export function Header({
           <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
             QUEUE
           </span>
-          <span className="font-mono text-sm text-neon-amber">{queueCount}</span>
+          <span className="font-mono text-sm text-neon-amber">2</span>
         </div>
       </div>
 

@@ -73,7 +73,7 @@ export function SettingsModal({
               Indicator Sensitivity
             </label>
             <div className="space-y-3">
-              {indicators.slice(0, 6).map((ind) => (
+              {indicators.map((ind) => (
                 <div key={ind.id} className="flex items-center gap-3">
                   <span className="text-sm w-5">{ind.icon}</span>
                   <span className="text-[10px] font-mono text-muted-foreground w-20 truncate">

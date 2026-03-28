@@ -208,6 +208,9 @@ export function ShortsCandidateCard({
         <span className="text-[9px] font-mono text-muted-foreground/40 tabular-nums shrink-0">
           {candidate.confidence}%
         </span>
+        <button className="text-[9px] font-mono text-neon-cyan/60 hover:text-neon-cyan transition-colors shrink-0 opacity-0 group-hover:opacity-100">
+          UNDO
+        </button>
       </div>
     );
   }
@@ -317,7 +320,7 @@ export function ShortsCandidateCard({
           <div className="mb-2.5">
             <Progress value={candidate.progress} className="h-1" />
             <span className="text-[9px] font-mono text-neon-amber mt-0.5 block">
-              {candidate.progress}% PROCESSING...
+              {candidate.progress}% · ~{Math.max(1, Math.round((100 - candidate.progress) / 10))}s remaining
             </span>
           </div>
         )}

@@ -49,7 +49,7 @@ export function IndicatorDashboard() {
                       : "text-muted-foreground"
                   }`}
                 >
-                  {ind.value}
+                  {ind.value}<span className="text-muted-foreground/40 font-normal">/100</span>
                 </span>
               </div>
               <div className="h-1 rounded-full bg-secondary overflow-hidden">

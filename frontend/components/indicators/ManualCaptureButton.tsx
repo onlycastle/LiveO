@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs: number) => void }) {
   const [isHolding, setIsHolding] = useState(false);
@@ -18,6 +18,7 @@ export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs:
   }, []);
 
   const startHold = useCallback(() => {
+    if (isHoldingRef.current) return;
     setIsHolding(true);
     isHoldingRef.current = true;
     setHoldSeconds(0);
@@ -37,7 +38,6 @@ export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs:
     setIsHolding(false);
     setHoldSeconds(0);
 
-    // Minimum 1 second hold to register a capture
     if (duration >= 1000) {
       onCapture(duration);
       setJustCaptured(true);
@@ -46,13 +46,34 @@ export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs:
   }, [onCapture, clearHoldInterval]);
 
   const cancelHold = useCallback(() => {
-    // Mouse leave just cancels without capturing
     if (!isHoldingRef.current) return;
     isHoldingRef.current = false;
     clearHoldInterval();
     setIsHolding(false);
     setHoldSeconds(0);
   }, [clearHoldInterval]);
+
+  // Keyboard shortcut: spacebar hold
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        startHold();
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        stopHold();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [startHold, stopHold]);
 
   const formatHold = (s: number) => (s < 1 ? "0s" : `${s}s`);
 
@@ -82,7 +103,7 @@ export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs:
         </span>
       </button>
       <p className="text-[9px] font-mono text-muted-foreground/40 text-center mt-1.5 tracking-wider">
-        HOLD TO MARK HIGHLIGHT — RELEASE TO CREATE SHORTS CANDIDATE
+        HOLD BUTTON OR SPACEBAR — RELEASE TO CREATE SHORTS
       </p>
     </div>
   );
