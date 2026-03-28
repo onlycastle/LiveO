@@ -18,9 +18,9 @@ const templateLabels: Record<ShortsTemplate, string> = {
 };
 
 const templateDescriptions: Record<ShortsTemplate, string> = {
-  blur_fill: "원본 중앙 + 블러 배경",
-  letterbox: "원본 + 검정바 + 캡션",
-  cam_split: "게임 상단 + 캠 하단",
+  blur_fill: "Original center + blur bg",
+  letterbox: "Original + black bars + caption",
+  cam_split: "Game top + cam bottom",
 };
 
 /* Template visual preview inside the 9:16 card */

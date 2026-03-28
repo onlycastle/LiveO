@@ -54,12 +54,12 @@ export function LandingScreen({
 
         {/* Description */}
         <p className="text-sm text-muted-foreground text-center leading-relaxed max-w-md">
-          게임 라이브 스트리밍을 실시간으로 분석하여
+          Analyze game live streams in real-time,
           <br />
           <span className="text-foreground font-medium">
-            하이라이트 구간을 자동 감지
+            auto-detect highlight moments
           </span>
-          하고 쇼츠를 생성합니다.
+          {" "}and generate Shorts.
         </p>
 
         {/* URL Input */}
@@ -83,7 +83,7 @@ export function LandingScreen({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
-              placeholder="Twitch 채널 URL 을 붙여넣기 하세요..."
+              placeholder="Paste a Twitch channel URL..."
               className="w-full h-14 bg-transparent pl-12 pr-24 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -93,7 +93,7 @@ export function LandingScreen({
             </div>
           </div>
           <p className="text-[10px] font-mono text-muted-foreground/50 text-center mt-3 tracking-wider">
-            예: https://www.twitch.tv/valorant
+            e.g. https://www.twitch.tv/valorant
           </p>
         </div>
 

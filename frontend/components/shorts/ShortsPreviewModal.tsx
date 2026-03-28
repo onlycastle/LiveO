@@ -28,14 +28,14 @@ export function ShortsPreviewModal({
 
         <div className="px-5 py-5 space-y-4">
           <p className="text-sm text-muted-foreground leading-relaxed">
-            이 하이라이트로 3가지 쇼츠 템플릿을 자동 생성합니다:
+            Auto-generate 3 Shorts templates from this highlight:
           </p>
 
           <div className="space-y-2">
             {[
-              { name: "Blur Fill", desc: "원본 중앙 + 블러 배경", rec: true },
-              { name: "Letterbox", desc: "원본 + 검정바 + 캡션" },
-              { name: "Cam Split", desc: "게임 상단 + 캠 하단" },
+              { name: "Blur Fill", desc: "Original center + blur background", rec: true },
+              { name: "Letterbox", desc: "Original + black bars + caption" },
+              { name: "Cam Split", desc: "Game top + cam bottom" },
             ].map((t) => (
               <div key={t.name} className="flex items-center gap-3 px-3 py-2 rounded-md bg-secondary/30 border border-border">
                 <div className="w-8 h-12 rounded bg-secondary/60 border border-border shrink-0" />
