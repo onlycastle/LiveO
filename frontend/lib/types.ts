@@ -46,6 +46,8 @@ export interface ShortsCandidate {
   capturedTranscript?: string;
 }
 
+export type ShortsTemplate = "cam_split" | "letterbox" | "blur_fill";
+
 export interface GeneratedShort {
   id: string;
   title: string;
@@ -53,6 +55,8 @@ export interface GeneratedShort {
   duration: string;
   createdAt: string;
   indicators: IndicatorType[];
+  template: ShortsTemplate;
+  caption?: string;
 }
 
 export interface TimelineEvent {
