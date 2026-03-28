@@ -535,6 +535,15 @@ export function useLiveO() {
         }
         break;
       }
+      case "generate_failed": {
+        const payload = data as { candidateId?: string; error?: string; jobId?: string };
+        appendFrontendLog("error", "generate_failed", "Short generation failed", {
+          candidateId: payload.candidateId ?? null,
+          jobId: payload.jobId ?? null,
+          error: payload.error ?? "Unknown generation error",
+        });
+        break;
+      }
       case "transcript_update":
         setTranscriptLines((current) => limitItems([...current, data as unknown as TranscriptLine], MAX_TRANSCRIPT_LINES));
         break;
@@ -572,6 +581,27 @@ export function useLiveO() {
     }
   }, [appendFrontendLog, pushDebugLogs, syncStreamStatus]);
 
+  const syncCandidatesAndShorts = useCallback(async () => {
+    try {
+      const [candidatesData, generatedData] = await Promise.all([
+        requestJson<ShortsCandidate[]>("/api/shorts/candidates", undefined, {
+          event: "resync_candidates",
+          successMessage: "Re-synced candidates after reconnect",
+          failureMessage: "Failed to re-sync candidates",
+        }),
+        requestJson<GeneratedShort[]>("/api/shorts", undefined, {
+          event: "resync_generated",
+          successMessage: "Re-synced generated shorts after reconnect",
+          failureMessage: "Failed to re-sync generated shorts",
+        }),
+      ]);
+      setCandidates(Array.isArray(candidatesData) ? candidatesData : []);
+      setGeneratedShorts(Array.isArray(generatedData) ? generatedData : []);
+    } catch {
+      // logged by requestJson
+    }
+  }, [requestJson]);
+
   useEffect(() => {
     let reconnectTimer: number | undefined;
     let disposed = false;
@@ -586,16 +616,21 @@ export function useLiveO() {
       wsRef.current = ws;
 
       ws.onopen = () => {
+        const isReconnect = reconnectRef.current > 0;
         reconnectRef.current = 0;
         setWsConnected(true);
         appendFrontendLog("info", "ws_connected", "WebSocket connection established", {
           url: WS_URL,
+          isReconnect,
         });
         void syncIndicatorsSnapshot(
           "indicators_resync",
           "Re-synced indicator dashboard after WebSocket connect",
           "Failed to re-sync indicator dashboard after WebSocket connect",
         ).catch(() => {});
+        if (isReconnect) {
+          void syncCandidatesAndShorts();
+        }
       };
 
       ws.onmessage = (event) => {
@@ -653,7 +688,7 @@ export function useLiveO() {
       wsRef.current = null;
       setWsConnected(false);
     };
-  }, [appendFrontendLog, handleWsMessage, syncIndicatorsSnapshot]);
+  }, [appendFrontendLog, handleWsMessage, syncCandidatesAndShorts, syncIndicatorsSnapshot]);
 
   const updateCandidateStatus = useCallback(async (id: string, status: ShortsCandidate["status"]) => {
     const normalizedId = id.trim();

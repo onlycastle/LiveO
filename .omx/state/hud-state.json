@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-03-28T23:37:05.920Z",
-  "turn_count": 44,
-  "last_agent_output": "원인입니다:  \n- 수동 캡처는 UI에서 `manual-${Date.now()}`로 만든 로컬 ID만 쓰고 있었고,  \n- `confirm`은 그대로 `PATCH /api/shor"
+  "last_turn_at": "2026-03-28T23:41:29.212Z",
+  "turn_count": 45,
+  "last_agent_output": "원인은 수동 캡처의 시간 기준이 잘못된 것이었습니다.\n\n- 스크린샷의 `Manual Capture at 16:38:20`는 transcript가 없을 때 타는 분기인데, 여기서 후"
 }

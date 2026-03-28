@@ -11,6 +11,14 @@ import { ShortsPreviewModal } from "@/components/shorts/ShortsPreviewModal";
 import { useLiveO } from "@/lib/use-liveo";
 import type { ShortsCandidate } from "@/lib/types";
 
+function formatElapsedTime(totalSeconds: number) {
+  const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+}
+
 export default function Home() {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -39,17 +47,19 @@ export default function Home() {
 
     // If no transcript lines available yet, create a minimal candidate
     if (transcriptLines.length === 0) {
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
       const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
+      const endSeconds = Math.max(0, Math.floor(streamStatus.elapsed));
+      const startSeconds = Math.max(0, endSeconds - totalDuration);
+      const startTime = formatElapsedTime(startSeconds);
+      const endTime = formatElapsedTime(endSeconds);
       const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
 
       const draftCandidate: Omit<ShortsCandidate, "id" | "progress"> = {
-        startTime: timeStr,
-        endTime: timeStr,
+        startTime,
+        endTime,
         duration: durationStr,
         thumbnailUrl: "",
-        title: `Manual Capture at ${timeStr}`,
+        title: `Manual Capture at ${endTime}`,
         indicators: ["manual"],
         confidence: 100,
         status: "pending",
@@ -95,7 +105,7 @@ export default function Home() {
     void createCandidate(newCandidate).catch((error) => {
       console.error("Failed to create manual candidate", error);
     });
-  }, [createCandidate, transcriptLines]);
+  }, [createCandidate, streamStatus.elapsed, transcriptLines]);
 
   if (!streamUrl) {
     return <LandingScreen onConnect={setStreamUrl} />;
