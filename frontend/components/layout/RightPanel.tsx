@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { IndicatorTimeline } from "@/components/indicators/IndicatorTimeline";
+
 import { ShortsCandidateCard } from "@/components/shorts/ShortsCandidateCard";
 import { GeneratedShortsGrid } from "@/components/shorts/GeneratedShortsGrid";
 import type { ShortsCandidate } from "@/lib/types";
@@ -29,11 +29,6 @@ export function RightPanel({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Timeline */}
-      <div className="border-b border-border shrink-0">
-        <IndicatorTimeline />
-      </div>
-
       {/* Shorts Candidates */}
       <div className="flex-1 min-h-0 border-b border-border">
         <div
