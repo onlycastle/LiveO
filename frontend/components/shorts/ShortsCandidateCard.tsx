@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import type { ShortsCandidate, IndicatorType } from "@/lib/types";
+import { resolveBackendUrl } from "@/lib/utils";
 
 const indicatorLabels: Record<IndicatorType, string> = {
   manual: "Manual", chat_velocity: "Chat", superchat: "SuperChat",
@@ -89,6 +90,9 @@ export function ShortsCandidateCard({
     <div data-testid={`candidate-card-${candidate.id}`} className={`shrink-0 w-56 h-full rounded-lg border ${cardBorder} bg-card/60 flex flex-col overflow-hidden`}>
       {/* Top: 9:16 thumbnail preview */}
       <div className="relative aspect-[9/12] bg-gradient-to-b from-secondary to-background shrink-0">
+        {candidate.thumbnailUrl && (
+          <img src={resolveBackendUrl(candidate.thumbnailUrl) ?? candidate.thumbnailUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        )}
         {/* Status badge */}
         <div className="absolute top-2 left-2 z-10">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-sm ${config.color}`}>

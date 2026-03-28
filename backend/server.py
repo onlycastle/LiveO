@@ -407,6 +407,9 @@ def _render_candidate_artifacts(
 
     candidate_start = _parse_timecode(str(candidate["startTime"]))
     candidate_end = _parse_timecode(str(candidate["endTime"]))
+    # Ensure at least 5 seconds when start == end (e.g. manual capture with single transcript line)
+    if candidate_end <= candidate_start:
+        candidate_end = candidate_start + 5.0
     clip_start = candidate_start + max(0.0, req.trim_start or 0.0)
     clip_end = candidate_start + req.trim_end if req.trim_end is not None else candidate_end
     clip_end = min(candidate_end, clip_end)
@@ -1250,6 +1253,8 @@ async def _run_generation(job_id: str, cid: str, req: GenerateRequest) -> None:
         if cid in _candidates:
             _candidates[cid]["status"] = "done"
             _candidates[cid]["progress"] = 100
+            if not _candidates[cid].get("thumbnailUrl"):
+                _candidates[cid]["thumbnailUrl"] = thumbnail_url
             await manager.broadcast("candidate_updated", _candidates[cid])
 
         await manager.broadcast("generate_complete", {

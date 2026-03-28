@@ -84,6 +84,9 @@ function ShortsViewModal({
 }) {
   if (!short) return null;
 
+  const videoUrl = resolveBackendUrl(short.artifactUrl);
+  const posterUrl = resolveBackendUrl(short.thumbnailUrl);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md bg-card border-border p-0 overflow-hidden max-h-[85vh] flex flex-col">
@@ -96,24 +99,30 @@ function ShortsViewModal({
           </DialogTitle>
         </DialogHeader>
 
-        {/* 9:16 Preview */}
+        {/* Video player */}
         <div className="flex-1 flex items-center justify-center bg-black/50 p-6">
           <div className="w-[200px] aspect-[9/16] rounded-xl border border-border bg-zinc-950 relative overflow-hidden">
-            <TemplatePreview template={short.template} caption={short.caption} />
-            {/* Play button overlay */}
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="w-12 h-12 rounded-full bg-black/40 border border-white/20 flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="white" className="ml-0.5">
-                  <path d="M4 3L12 8L4 13V3Z" />
-                </svg>
-              </div>
-            </div>
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                poster={posterUrl ?? undefined}
+                controls
+                playsInline
+                className="absolute inset-0 w-full h-full object-contain bg-black"
+              />
+            ) : (
+              <TemplatePreview template={short.template} caption={short.caption} />
+            )}
             {/* Bottom info */}
-            <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/80 to-transparent z-10" />
-            <div className="absolute bottom-3 inset-x-3 z-10">
-              <p className="text-[10px] text-white font-medium">{short.title}</p>
-              <p className="text-[8px] text-white/50 font-mono mt-0.5">{short.duration} · {templateLabels[short.template]}</p>
-            </div>
+            {!videoUrl && (
+              <>
+                <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/80 to-transparent z-10" />
+                <div className="absolute bottom-3 inset-x-3 z-10">
+                  <p className="text-[10px] text-white font-medium">{short.title}</p>
+                  <p className="text-[8px] text-white/50 font-mono mt-0.5">{short.duration} · {templateLabels[short.template]}</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -157,6 +166,15 @@ function ShortsViewModal({
   );
 }
 
+/* Actual thumbnail with fallback to template preview */
+function ShortThumbnail({ short }: { short: GeneratedShort }) {
+  const thumbUrl = resolveBackendUrl(short.thumbnailUrl);
+  if (thumbUrl) {
+    return <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />;
+  }
+  return <TemplatePreview template={short.template} caption={short.caption} />;
+}
+
 /* Bundle: group of 3 templates from same highlight */
 function ShortBundle({ shorts }: { shorts: GeneratedShort[] }) {
   const [viewShort, setViewShort] = useState<GeneratedShort | null>(null);
@@ -178,7 +196,7 @@ function ShortBundle({ shorts }: { shorts: GeneratedShort[] }) {
           REC
         </div>
         <div className="aspect-[9/14] relative">
-          <TemplatePreview template={recommended.template} caption={recommended.caption} />
+          <ShortThumbnail short={recommended} />
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="w-8 h-8 rounded-full bg-black/30 border border-white/20 flex items-center justify-center">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="white" className="ml-0.5">
@@ -206,7 +224,7 @@ function ShortBundle({ shorts }: { shorts: GeneratedShort[] }) {
             className="relative shrink-0 w-20 rounded-lg border border-border bg-secondary/30 overflow-hidden hover:border-muted-foreground/50 transition-all cursor-pointer"
           >
             <div className="aspect-[9/14] relative">
-              <TemplatePreview template={s.template} caption={s.caption} />
+              <ShortThumbnail short={s} />
               <div className="absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-black/80 to-transparent z-10" />
               <div className="absolute bottom-0 inset-x-0 p-1 z-10">
                 <p className="text-[7px] font-mono text-muted-foreground">{templateLabels[s.template]}</p>

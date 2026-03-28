@@ -89,9 +89,20 @@ export default function Home() {
     const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
     const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
 
+    // When start/end transcript lines share the same timestamp, fall back to
+    // elapsed-based window so the backend always gets a non-zero clip range.
+    let startTime = startLine.timestamp;
+    let endTime = endLine.timestamp;
+    if (startTime === endTime) {
+      const endSeconds = Math.max(0, Math.floor(streamStatus.elapsed));
+      const startSeconds = Math.max(0, endSeconds - totalDuration);
+      startTime = formatElapsedTime(startSeconds);
+      endTime = formatElapsedTime(endSeconds);
+    }
+
     const newCandidate: Omit<ShortsCandidate, "id" | "progress"> = {
-      startTime: startLine.timestamp,
-      endTime: endLine.timestamp,
+      startTime,
+      endTime,
       duration: durationStr,
       thumbnailUrl: "",
       title: `Manual Capture -- "${anchorLine.text.slice(0, 24)}..."`,
