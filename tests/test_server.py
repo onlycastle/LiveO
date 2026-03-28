@@ -238,6 +238,61 @@ async def test_debug_logs_endpoint_returns_recent_logs(client: AsyncClient):
     logs = logs_resp.json()
     assert isinstance(logs, list)
     assert any(entry["event"] == "candidate_created" for entry in logs)
+
+
+@pytest.mark.anyio
+async def test_auto_create_candidate_auto_confirms_and_schedules_generation(monkeypatch):
+    generated_jobs = []
+
+    async def fake_run_generation(job_id: str, candidate_id: str, req: GenerateRequest) -> None:
+        generated_jobs.append((job_id, candidate_id, req.template))
+
+    monkeypatch.setattr(srv, "_run_generation", fake_run_generation)
+    srv._settings = srv.Settings(auto_confirm_threshold=85)
+
+    await srv._auto_create_candidate({
+        "startTime": "0:10",
+        "endTime": "0:20",
+        "duration": "0:10",
+        "title": "Auto Confirm Test",
+        "indicators": ["audio_spike"],
+        "confidence": 90,
+    })
+
+    await asyncio.sleep(0)
+
+    assert len(srv._candidates) == 1
+    candidate = next(iter(srv._candidates.values()))
+    assert candidate["status"] == "confirmed"
+    assert {template for _, _, template in generated_jobs} == {"blur_fill", "letterbox", "cam_split"}
+    assert len(generated_jobs) == 3
+
+
+@pytest.mark.anyio
+async def test_auto_create_candidate_below_threshold_stays_pending(monkeypatch):
+    generated_jobs = []
+
+    async def fake_run_generation(job_id: str, candidate_id: str, req: GenerateRequest) -> None:
+        generated_jobs.append((job_id, candidate_id, req.template))
+
+    monkeypatch.setattr(srv, "_run_generation", fake_run_generation)
+    srv._settings = srv.Settings(auto_confirm_threshold=95)
+
+    await srv._auto_create_candidate({
+        "startTime": "0:10",
+        "endTime": "0:20",
+        "duration": "0:10",
+        "title": "Pending Test",
+        "indicators": ["keyword"],
+        "confidence": 90,
+    })
+
+    await asyncio.sleep(0)
+
+    assert len(srv._candidates) == 1
+    candidate = next(iter(srv._candidates.values()))
+    assert candidate["status"] == "pending"
+    assert generated_jobs == []
     assert all(entry["origin"] == "backend" for entry in logs)
 
 

@@ -177,7 +177,7 @@ class Pipeline:
         result = subprocess.run(
             [
                 "ffmpeg",
-                "-fflags", "+discardcorrupt",
+                "-fflags", "+discardcorrupt+genpts",
                 "-err_detect", "ignore_err",
                 "-i", video_path,
                 "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",

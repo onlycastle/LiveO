@@ -57,6 +57,7 @@ _capture_method: str = ""
 _error: str | None = None
 _capture: BaseCapture | None = None
 _clip_buffer: RingBuffer | None = None
+_AUTO_GENERATE_TEMPLATES: tuple[str, ...] = ("blur_fill", "letterbox", "cam_split")
 
 _candidates: dict[str, dict[str, Any]] = {}
 _generated: dict[str, dict[str, Any]] = {}
@@ -591,8 +592,10 @@ def _on_transcript(line: TranscriptLine) -> None:
         "isHighlight": line.is_highlight,
     })
 
-    # Run Gemini text analysis on transcript for additional keyword/context signals
-    if _gemini_detector.available:
+    # Run Gemini text analysis only when multimodal didn't already score this bucket
+    seg_key = _find_segment_bucket(line.start)
+    multimodal_done = seg_key and _pending_detections.get(seg_key, {}).get("gemini") is not None
+    if _gemini_detector.available and not multimodal_done:
         try:
             text_result = _gemini_detector.analyze_text(line.text)
             score_pct = int(text_result.keyword_relevance * 100)
@@ -607,8 +610,6 @@ def _on_transcript(line: TranscriptLine) -> None:
                 },
             )
             _broadcast_indicator_update("keyword", score_pct, score_pct > 0)
-            # Find the segment bucket and add text analysis
-            seg_key = _find_segment_bucket(line.start)
             if seg_key:
                 bucket = _pending_detections[seg_key]
                 _check_highlight(bucket["ts_start"], bucket["ts_end"], gemini_text_result=text_result)
@@ -750,6 +751,9 @@ def _check_highlight(
 async def _auto_create_candidate(data: dict) -> None:
     """Auto-create a candidate from highlight detection."""
     cid = f"sc-{uuid.uuid4().hex[:8]}"
+    confidence = int(data.get("confidence", 80))
+    auto_threshold = int(_settings.auto_confirm_threshold)
+    status = CandidateStatus.CONFIRMED if confidence >= auto_threshold else CandidateStatus.PENDING
     candidate = ShortsCandidate(
         id=cid,
         start_time=data["startTime"],
@@ -757,17 +761,39 @@ async def _auto_create_candidate(data: dict) -> None:
         duration=data["duration"],
         title=data["title"],
         indicators=data.get("indicators", []),
-        confidence=data.get("confidence", 80),
-        status=CandidateStatus.PENDING,
+        confidence=confidence,
+        status=status,
     )
-    candidate_dict = candidate.model_dump(by_alias=True)
+    candidate_dict = candidate.model_dump(by_alias=True, mode="json")
     _candidates[cid] = candidate_dict
     _debug(
         "candidate_auto_created",
         "Auto-created shorts candidate from highlight detector",
-        details={"candidateId": cid, "title": candidate_dict["title"]},
+        details={
+            "candidateId": cid,
+            "title": candidate_dict["title"],
+            "status": status,
+            "confidence": confidence,
+            "autoConfirmThreshold": auto_threshold,
+        },
     )
     await manager.broadcast("candidate_created", candidate_dict)
+
+    if status == CandidateStatus.CONFIRMED:
+        _debug(
+            "candidate_auto_confirmed",
+            "Auto-confirmed candidate exceeded threshold",
+            details={"candidateId": cid, "threshold": auto_threshold, "confidence": confidence},
+        )
+        for template in _AUTO_GENERATE_TEMPLATES:
+            job_id = f"job-{uuid.uuid4().hex[:8]}"
+            asyncio.create_task(
+                _run_generation(
+                    job_id,
+                    cid,
+                    GenerateRequest(candidate_id=cid, template=template),
+                )
+            )
 
 
 # ── Stream Control ──────────────────────────────────────────
@@ -1042,7 +1068,7 @@ async def create_candidate(req: ShortsCandidateCreate) -> dict[str, Any]:
         is_manual=req.is_manual,
         captured_transcript=req.captured_transcript,
     )
-    data = candidate.model_dump(by_alias=True)
+    data = candidate.model_dump(by_alias=True, mode="json")
     _candidates[cid] = data
     _debug(
         "candidate_created",
@@ -1065,7 +1091,7 @@ async def update_candidate(candidate_id: str, req: ShortsCandidateUpdate) -> dic
         )
         raise HTTPException(404, "Candidate not found")
 
-    updates = req.model_dump(by_alias=True, exclude_none=True)
+    updates = req.model_dump(by_alias=True, exclude_none=True, mode="json")
     _candidates[candidate_id].update(updates)
     _debug(
         "candidate_updated",
@@ -1213,7 +1239,7 @@ async def _run_generation(job_id: str, cid: str, req: GenerateRequest) -> None:
             artifact_url=artifact_url,
             thumbnail_url=thumbnail_url,
         )
-        data = generated.model_dump(by_alias=True)
+        data = generated.model_dump(by_alias=True, mode="json")
         _generated[short_id] = data
         _debug(
             "generate_complete",
@@ -1334,7 +1360,7 @@ if os.getenv("LIVEO_TEST_MODE") == "1":
                 is_manual=c.get("isManual", False),
                 captured_transcript=c.get("capturedTranscript"),
             )
-            _candidates[cid] = candidate.model_dump(by_alias=True)
+            _candidates[cid] = candidate.model_dump(by_alias=True, mode="json")
 
         for g in payload.get("generated", []):
             gid = g.get("id", f"gs-test-{uuid.uuid4().hex[:8]}")
@@ -1349,7 +1375,7 @@ if os.getenv("LIVEO_TEST_MODE") == "1":
                 artifact_url=g.get("artifactUrl", f"/artifacts/videos/{gid}.mp4"),
                 thumbnail_url=g.get("thumbnailUrl", f"/artifacts/thumbs/{gid}.jpg"),
             )
-            _generated[gid] = gen.model_dump(by_alias=True)
+            _generated[gid] = gen.model_dump(by_alias=True, mode="json")
 
         return {"status": "seeded", "candidates": len(payload.get("candidates", [])), "generated": len(payload.get("generated", []))}
 

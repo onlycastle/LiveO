@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-03-28T23:27:22.036Z",
-  "turn_count": 39,
-  "last_agent_output": "원인 맞습니다. `_on_segment()`에서 `if event.video_path` 블록이 `try:` 안쪽으로 들여쓰기 안 되어 `except/finally`가 빠진 상태로 "
+  "last_turn_at": "2026-03-28T23:37:05.920Z",
+  "turn_count": 44,
+  "last_agent_output": "원인입니다:  \n- 수동 캡처는 UI에서 `manual-${Date.now()}`로 만든 로컬 ID만 쓰고 있었고,  \n- `confirm`은 그대로 `PATCH /api/shor"
 }

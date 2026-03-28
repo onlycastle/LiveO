@@ -19,7 +19,6 @@ export default function Home() {
 
   const {
     candidates,
-    setCandidates,
     generatedShorts,
     transcriptLines,
     indicators,
@@ -29,6 +28,7 @@ export default function Home() {
     confirmCandidate,
     dismissCandidate,
     undoCandidate,
+    createCandidate,
     generateShorts,
   } = useLiveO();
 
@@ -44,8 +44,7 @@ export default function Home() {
       const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
       const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
 
-      const newCandidate: ShortsCandidate = {
-        id: `manual-${Date.now()}`,
+      const draftCandidate: Omit<ShortsCandidate, "id" | "progress"> = {
         startTime: timeStr,
         endTime: timeStr,
         duration: durationStr,
@@ -56,8 +55,9 @@ export default function Home() {
         status: "pending",
         isManual: true,
       };
-
-      setCandidates((prev) => [newCandidate, ...prev]);
+      void createCandidate(draftCandidate).catch((error) => {
+        console.error("Failed to create manual candidate", error);
+      });
       return;
     }
 
@@ -79,8 +79,7 @@ export default function Home() {
     const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
     const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
 
-    const newCandidate: ShortsCandidate = {
-      id: `manual-${Date.now()}`,
+    const newCandidate: Omit<ShortsCandidate, "id" | "progress"> = {
       startTime: startLine.timestamp,
       endTime: endLine.timestamp,
       duration: durationStr,
@@ -93,8 +92,10 @@ export default function Home() {
       capturedTranscript: capturedText,
     };
 
-    setCandidates((prev) => [newCandidate, ...prev]);
-  }, [transcriptLines, setCandidates]);
+    void createCandidate(newCandidate).catch((error) => {
+      console.error("Failed to create manual candidate", error);
+    });
+  }, [createCandidate, transcriptLines]);
 
   if (!streamUrl) {
     return <LandingScreen onConnect={setStreamUrl} />;

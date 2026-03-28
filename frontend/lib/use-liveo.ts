@@ -46,6 +46,9 @@ const MAX_DEBUG_LOGS = 180;
 const MAX_TRANSCRIPT_LINES = 250;
 
 type JsonRecord = Record<string, unknown>;
+type CandidateCreateInput = Omit<ShortsCandidate, "id" | "progress"> & {
+  status?: ShortsCandidate["status"];
+};
 
 const DEFAULT_STREAM_STATUS: StreamStatus = {
   isLive: false,
@@ -88,6 +91,14 @@ function parseJsonMaybe(text: string): unknown {
   } catch {
     return text;
   }
+}
+
+function isShortsCandidate(value: unknown): value is ShortsCandidate {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return typeof record.id === "string" && typeof record.status === "string";
 }
 
 function normalizeDetails(details: unknown): Record<string, unknown> | undefined {
@@ -343,7 +354,9 @@ export function useLiveO() {
           method,
           path,
           status: response.status,
+          statusText: response.statusText,
           response: payload,
+          responseText: text || "<empty>",
         });
         throw new Error(getResponseErrorMessage(response, payload));
       }
@@ -353,7 +366,8 @@ export function useLiveO() {
         path,
         status: response.status,
       });
-      return payload as T;
+
+      return payload === null ? (null as unknown as T) : (payload as T);
     } catch (error) {
       appendFrontendLog("error", `${options.event}_threw`, `${options.failureMessage} (network/runtime)`, {
         method,
@@ -376,7 +390,7 @@ export function useLiveO() {
       failureMessage,
     });
     setIndicators(normalizeIndicators(indicatorsData));
-  }, [requestJson]);
+  }, [appendFrontendLog, requestJson]);
 
   useEffect(() => {
     let cancelled = false;
@@ -642,7 +656,13 @@ export function useLiveO() {
   }, [appendFrontendLog, handleWsMessage, syncIndicatorsSnapshot]);
 
   const updateCandidateStatus = useCallback(async (id: string, status: ShortsCandidate["status"]) => {
-    const updated = await requestJson<ShortsCandidate>(`/api/shorts/candidates/${id}`, {
+    const normalizedId = id.trim();
+    if (!normalizedId) {
+      appendFrontendLog("error", "candidate_update_invalid_id", "Cannot update candidate with empty id");
+      return;
+    }
+
+    const updated = await requestJson<ShortsCandidate | null>(`/api/shorts/candidates/${encodeURIComponent(normalizedId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -652,7 +672,17 @@ export function useLiveO() {
       failureMessage: `Failed to update candidate to ${status}`,
     });
 
-    setCandidates((current) => current.map((candidate) => (candidate.id === id ? updated : candidate)));
+    setCandidates((current) =>
+      current.map((candidate) => {
+        if (candidate.id !== normalizedId) {
+          return candidate;
+        }
+        if (!isShortsCandidate(updated)) {
+          return { ...candidate, status };
+        }
+        return updated;
+      }),
+    );
   }, [requestJson]);
 
   const confirmCandidate = useCallback(async (id: string) => {
@@ -687,6 +717,31 @@ export function useLiveO() {
     }
   }, [appendFrontendLog, requestJson]);
 
+  const createCandidate = useCallback(async (candidate: CandidateCreateInput) => {
+    const payload = {
+      ...candidate,
+      status: candidate.status ?? "pending",
+    };
+
+    const created = await requestJson<ShortsCandidate>("/api/shorts/candidates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }, {
+      event: "candidate_created",
+      successMessage: "Created new candidate",
+      failureMessage: "Failed to create candidate",
+    });
+
+    setCandidates((current) => (
+      current.some((entry) => entry.id === created.id)
+        ? current
+        : [created, ...current]
+    ));
+
+    return created;
+  }, [requestJson]);
+
   return {
     candidates,
     setCandidates,
@@ -700,6 +755,7 @@ export function useLiveO() {
     confirmCandidate,
     dismissCandidate,
     undoCandidate,
+    createCandidate,
     generateShorts,
   };
 }
