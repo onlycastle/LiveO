@@ -274,21 +274,94 @@ class HighlightCandidate:
 
 #### C. Video Editing (16:9 → 9:16)
 
-**MVP: FFmpeg 정적 중앙 크롭** — Valorant은 크로스헤어가 화면 중앙이므로 중앙 크롭이 효과적.
+##### C-1. 교전 이펙트 (Zoom & Slow-Motion)
 
-```bash
-ffmpeg -i source.ts \
-  -ss {start} -t {duration} \
-  -vf "crop=608:1080:656:0,scale=1080:1920" \
-  -c:v libx264 -crf 20 -preset medium \
-  -c:a aac -b:a 128k \
-  highlight_{timestamp}_{score}.mp4
+교전(킬피드 감지) 시점에 자동으로 줌 + 슬로모션을 적용하여 하이라이트 임팩트를 극대화한다.
+
+| 이펙트 | 값 | 적용 시점 |
+|--------|-----|-----------|
+| **Zoom** | 1.2x ~ 1.5x (중앙 기준) | 킬 발생 직전 0.3초 ~ 킬 후 1초 |
+| **Slow-Motion** | 0.5x ~ 0.7x 속도 | 킬 발생 직전 0.5초 ~ 킬 후 0.5초 |
+| **Zoom 복귀** | ease-out 전환 (0.3초) | 슬로모션 종료 후 원래 배율로 복귀 |
+
+- 연속 킬(더블킬, 트리플킬 등) 시 줌/슬로모션 구간이 자연스럽게 이어짐
+- 줌 중심점: 크로스헤어 위치 (Valorant 기본 화면 중앙)
+
+##### C-2. 숏폼 템플릿 시스템
+
+사용자가 클립 생성 시 아래 템플릿 중 하나를 선택할 수 있다.
+
+**템플릿 A: 오버레이 구성 (Overlay Layout)**
 ```
+┌─────────────────────┐
+│  [Kill Log]  (opt)  │  ← 상단: 킬 로그 오버레이 (선택)
+│                     │
+│                     │
+│   게임 화면 (9:16)  │  ← 중앙: 16:9 → 9:16 중앙 크롭 (전체 화면)
+│   줌/슬로모션 적용   │
+│                     │
+│                     │
+│ ┌─────────────────┐ │
+│ │ 스트리머 얼굴    │ │  ← 하단: 웹캠 피드 (항상 표시)
+│ └─────────────────┘ │
+└─────────────────────┘
+```
+- 게임 화면이 세로 전체를 차지
+- 스트리머 얼굴: 하단 고정, 반투명 배경 또는 원형/라운드 마스크
+- 킬 로그: 상단 오버레이, 킬 발생 시 표시 (optional toggle)
 
-**클리핑 규칙:**
+**템플릿 B: 동적 구성 (Dynamic Layout)**
+```
+┌─────────────────────┐
+│                     │
+│                     │
+│   게임 화면 (9:16)  │  ← 중앙 크롭, 줌/슬로모션 적용
+│                     │
+│                     │
+│                     │
+│                     │
+│                     │
+│                     │
+└─────────────────────┘
+
+  + 동적 오버레이:
+  - 스트리머 얼굴: 표정 변화 or 발화 시에만 2~3초 팝업
+  - 킬 로그: 킬 발생 시에만 2~3초 팝업
+```
+- 게임 화면이 세로 전체를 차지 (방해 요소 최소화)
+- 스트리머 얼굴: **표정 변화 감지** 또는 **음성 발화(VAD)** 시에만 하단에 2~3초 등장 후 fade-out
+- 킬 로그: 킬피드 감지 시에만 상단에 2~3초 등장 후 fade-out
+
+##### C-3. 템플릿 B 추가 요구사항
+
+| 요소 | 트리거 | 표시 시간 | 전환 효과 |
+|------|--------|-----------|-----------|
+| 스트리머 얼굴 | VAD 음성 감지 또는 표정 변화 | 2~3초 | slide-up + fade-out |
+| 킬 로그 | KillFeedDetector 이벤트 | 2~3초 | slide-down + fade-out |
+
+> **표정 변화 감지 (Optional, MVP 제외):** OpenCV 또는 MediaPipe FaceMesh로 스트리머 웹캠 피드에서 표정 변화(입 벌림, 놀람 등) 감지. MVP에서는 VAD 기반 발화 감지만으로 얼굴 표시를 트리거한다.
+
+##### C-4. 기본 클리핑 규칙
+
 - 하이라이트 시점 **5초 전**부터 시작
 - 최소 15초, 최대 30초
-- 파일명: `highlight_{timestamp}_{score}.mp4`
+- 파일명: `highlight_{timestamp}_{score}_{template}.mp4`
+
+**FFmpeg 예시 (템플릿 A 기본):**
+```bash
+ffmpeg -i source.ts -i webcam.ts \
+  -ss {start} -t {duration} \
+  -filter_complex "
+    [0:v]crop=608:1080:656:0,scale=1080:1920,
+    zoompan=z='if(between(t,{kill_t-0.3},{kill_t+1}),1.3,1)':d=1:s=1080x1920[game];
+    [1:v]scale=300:-1,format=yuva420p,colorchannelmixer=aa=0.9[cam];
+    [game][cam]overlay=390:1600[out]
+  " \
+  -map "[out]" -map 0:a \
+  -c:v libx264 -crf 20 -preset medium \
+  -c:a aac -b:a 128k \
+  highlight_{timestamp}_{score}_{template}.mp4
+```
 
 #### 의존성
 - **Deepgram SDK** 또는 **faster-whisper** ≥ 1.0
@@ -307,6 +380,9 @@ ffmpeg -i source.ts \
 | 하이라이트 감지 | 수동 레이블 20개 vs 자동 감지 | recall > 70%, precision > 60% |
 | 9:16 크롭 | 생성 클립의 크로스헤어 위치 | 화면 중앙 30% 이내 |
 | 클립 길이 | 전체 생성 클립 | 15~30초 범위 100% |
+| 줌/슬로모션 | 킬 발생 시점 전후 이펙트 확인 | 줌 1.2~1.5x 적용, 속도 0.5~0.7x 확인 |
+| 템플릿 A | 오버레이 레이아웃 클립 생성 | 웹캠 하단 고정, 킬 로그 상단 표시 |
+| 템플릿 B 동적 표시 | VAD 발화 시 얼굴 팝업, 킬 시 로그 팝업 | 2~3초 표시 후 fade-out |
 
 ---
 
@@ -365,7 +441,9 @@ ffmpeg -i source.ts \
 │  ┌──────────────────────────────────────────────────┐   │
 │  │  [  ━━━━━━━━━━━━━━  ]  trim handles             │   │
 │  └──────────────────────────────────────────────────┘   │
-│  Crop: ○ Center  ○ Custom  ○ Split-screen              │
+│  Template: ◉ A (Overlay)  ○ B (Dynamic)                │
+│  Zoom: [1.3x ▾]   Slomo: [0.6x ▾]                    │
+│  ☑ Kill Log overlay   ☑ Streamer face                  │
 │                                                         │
 │  [Cancel]                          [Save] [Export →]     │
 └─────────────────────────────────────────────────────────┘
@@ -451,7 +529,7 @@ Server → Client:
 | 담당자 | 역할 | 산출물 |
 |--------|------|--------|
 | Jemin | Web UI 디자인 + 프론트엔드 구현 | `DESIGN.md`, Web UI |
-| Seongheum | 라이브 스트리밍 캡처 + 실시간 파이프라인 | `LIVE_SERVER.md`, Stream Server |
+| Seongheum | 라이브 스트리밍 캡처 + 실시간 파이프라인 | `backend.md`, Stream Server |
 | Sungman | Transcription + 하이라이트 감지 + 클립 편집 | `Transcript.md`, Detection Engine |
 
 ## 9. Tech Stack Summary
@@ -482,7 +560,7 @@ Server → Client:
 |------|------|
 | YouTube API로 캡처 가능한가? | ❌ ToS 위반. OBS RTMP 수신으로 전환. yt-dlp는 demo only. |
 | 하이라이트 감지 기준? | 복합 (오디오 0.3 + 키워드 0.3 + 킬피드 OCR 0.4) |
-| 크롭 전략? | 정적 중앙 크롭 (MVP). Valorant 크로스헤어가 중앙이므로 적합. |
+| 크롭 전략? | 중앙 크롭 + 교전 시 줌/슬로모션. 2가지 템플릿(A: 오버레이, B: 동적) 선택 가능. |
 | 실시간 vs 일괄? | **실시간 처리 우선** |
 | 지원 게임 범위? | **Valorant만** |
 | 언어? | **영어만** |

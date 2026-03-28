@@ -37,7 +37,7 @@
 ### A.2 실시간 파이프라인
 
 ```
-Audio Pipe (from LIVE_SERVER, PCM 16kHz)
+Audio Pipe (from backend, PCM 16kHz)
        │
        ▼
   Silero VAD (<1ms) ── 음성 구간만 통과

@@ -1,4 +1,4 @@
-# LIVE_SERVER.md — 라이브 스트리밍 캡처 모듈 설계
+# backend.md — 라이브 스트리밍 캡처 모듈 설계
 
 **담당:** Seongheum
 **상위 문서:** PRD.md
