@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
   const [elapsed, setElapsed] = useState(0);
-  const [connected, setConnected] = useState(true);
+  const connected = true;
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -39,7 +39,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
       <div className="flex items-center gap-2 flex-1 max-w-md">
         <div className="flex-1 h-8 rounded-md bg-secondary/60 border border-border px-3 flex items-center">
           <span className="text-xs font-mono text-muted-foreground truncate">
-            youtube.com/watch?v=RQFpfJBItUY
+            twitch.tv/valorant
           </span>
         </div>
         <div className="flex items-center gap-1.5">

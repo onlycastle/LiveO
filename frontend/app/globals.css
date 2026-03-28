@@ -145,107 +145,10 @@
   box-shadow: 0 0 8px oklch(0.795 0.184 128.25 / 0.4), 0 0 24px oklch(0.795 0.184 128.25 / 0.15);
 }
 
-.neon-glow-cyan {
-  box-shadow: 0 0 8px oklch(0.777 0.152 199.57 / 0.4), 0 0 24px oklch(0.777 0.152 199.57 / 0.15);
-}
-
-.neon-glow-red {
-  box-shadow: 0 0 8px oklch(0.637 0.237 15.163 / 0.4), 0 0 24px oklch(0.637 0.237 15.163 / 0.15);
-}
-
-.neon-text-lime {
-  text-shadow: 0 0 8px oklch(0.795 0.184 128.25 / 0.6);
-}
-
-.neon-text-cyan {
-  text-shadow: 0 0 8px oklch(0.777 0.152 199.57 / 0.6);
-}
-
-.neon-text-red {
-  text-shadow: 0 0 8px oklch(0.637 0.237 15.163 / 0.6);
-}
-
-.neon-glow-amber {
-  box-shadow: 0 0 8px oklch(0.795 0.184 84.429 / 0.4), 0 0 24px oklch(0.795 0.184 84.429 / 0.15);
-}
-
-.neon-glow-violet {
-  box-shadow: 0 0 8px oklch(0.702 0.183 293.54 / 0.4), 0 0 24px oklch(0.702 0.183 293.54 / 0.15);
-}
 
 /* Scan-line effect */
 .animate-scan-line {
   animation: scan-line 3s linear infinite;
-}
-
-/* Subtle glow pulse for active indicators */
-@keyframes glow-pulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-.animate-glow-pulse {
-  animation: glow-pulse 2.5s ease-in-out infinite;
-}
-
-/* Waveform bars animation */
-@keyframes waveform-bar-1 {
-  0%, 100% { height: 40%; }
-  50% { height: 90%; }
-}
-@keyframes waveform-bar-2 {
-  0%, 100% { height: 70%; }
-  50% { height: 30%; }
-}
-@keyframes waveform-bar-3 {
-  0%, 100% { height: 50%; }
-  50% { height: 100%; }
-}
-
-/* Capture ring pulse */
-@keyframes capture-ring-pulse {
-  0% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.6; }
-}
-.animate-capture-ring {
-  animation: capture-ring-pulse 0.6s ease-in-out infinite;
-}
-
-/* Success burst particles */
-@keyframes particle-burst {
-  0% { transform: scale(0); opacity: 1; }
-  50% { transform: scale(1.5); opacity: 0.6; }
-  100% { transform: scale(2); opacity: 0; }
-}
-.animate-particle-burst {
-  animation: particle-burst 0.8s ease-out forwards;
-}
-
-/* Highlight line pulse */
-@keyframes highlight-pulse {
-  0%, 100% { background-color: oklch(0.795 0.184 128.25 / 0.06); }
-  50% { background-color: oklch(0.795 0.184 128.25 / 0.14); }
-}
-.animate-highlight-pulse {
-  animation: highlight-pulse 2s ease-in-out infinite;
-}
-
-/* Speaking line glow */
-@keyframes speaking-glow {
-  0%, 100% { border-left-color: oklch(0.777 0.152 199.57 / 0.8); }
-  50% { border-left-color: oklch(0.777 0.152 199.57 / 0.3); }
-}
-.animate-speaking-glow {
-  animation: speaking-glow 1.5s ease-in-out infinite;
-}
-
-/* Trend arrow bounce */
-@keyframes trend-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
-}
-.animate-trend-bounce {
-  animation: trend-bounce 1.5s ease-in-out infinite;
 }
 
 /* Section header flash — triggered when new candidate arrives */

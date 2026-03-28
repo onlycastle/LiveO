@@ -4,9 +4,8 @@ export function StreamEmbed() {
   return (
     <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-black">
       <iframe
-        src="https://www.youtube.com/embed/RQFpfJBItUY?autoplay=0&mute=1"
+        src="https://player.twitch.tv/?channel=valorant&parent=localhost"
         className="absolute inset-0 w-full h-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         title="Live Stream"
       />

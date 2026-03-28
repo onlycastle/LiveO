@@ -56,7 +56,7 @@ export function SettingsModal({
 
           <div>
             <label className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider mb-2 block">
-              YouTube API Key
+              Twitch Client ID
             </label>
             <input
               type="password"

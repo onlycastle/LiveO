@@ -54,7 +54,7 @@ export function LandingScreen({
 
         {/* Description */}
         <p className="text-sm text-muted-foreground text-center leading-relaxed max-w-md">
-          유튜브 게임 라이브 스트리밍을 실시간으로 분석하여
+          게임 라이브 스트리밍을 실시간으로 분석하여
           <br />
           <span className="text-foreground font-medium">
             하이라이트 구간을 자동 감지
@@ -72,9 +72,8 @@ export function LandingScreen({
             }`}
           >
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.13C5.12 19.56 12 19.56 12 19.56s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.43z" />
-                <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
               </svg>
             </div>
             <input
@@ -84,7 +83,7 @@ export function LandingScreen({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               onKeyDown={handleKeyDown}
-              placeholder="YouTube Live URL 을 붙여넣기 하세요..."
+              placeholder="Twitch 채널 URL 을 붙여넣기 하세요..."
               className="w-full h-14 bg-transparent pl-12 pr-24 text-sm font-mono text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -94,7 +93,7 @@ export function LandingScreen({
             </div>
           </div>
           <p className="text-[10px] font-mono text-muted-foreground/50 text-center mt-3 tracking-wider">
-            예: https://www.youtube.com/watch?v=RQFpfJBItUY
+            예: https://www.twitch.tv/valorant
           </p>
         </div>
 
