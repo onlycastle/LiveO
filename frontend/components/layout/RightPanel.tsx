@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { ShortsCandidateCard } from "@/components/shorts/ShortsCandidateCard";
 import { GeneratedShortsGrid } from "@/components/shorts/GeneratedShortsGrid";
 import type { ShortsCandidate } from "@/lib/types";
@@ -29,14 +27,14 @@ export function RightPanel({
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
-      {/* Shorts Candidates */}
-      <div className="flex-1 min-h-0 border-b border-border">
+      {/* Shorts Candidates — horizontal scroll */}
+      <div className="flex-1 min-h-0">
         <div
           key={headerFlash ? "flash" : "idle"}
           className={`flex items-center justify-between px-4 py-2 border-b border-border ${headerFlash ? "animate-header-flash" : ""}`}
         >
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-neon-amber animate-neon-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-neon-lime animate-neon-pulse" />
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               Shorts Candidates
             </span>
@@ -45,13 +43,13 @@ export function RightPanel({
             <span className="text-[10px] font-mono text-neon-lime tabular-nums">
               {candidates.filter((c) => c.status === "pending").length} PENDING
             </span>
-            <span className="text-[10px] font-mono text-neon-amber tabular-nums">
+            <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
               {candidates.filter((c) => c.status === "generating").length} GENERATING
             </span>
           </div>
         </div>
-        <ScrollArea className="h-[calc(100%-36px)]">
-          <div className="p-4 space-y-3">
+        <div className="h-[calc(100%-36px)] overflow-x-auto overflow-y-hidden scrollbar-none">
+          <div className="flex gap-3 p-4 h-full">
             {candidates.map((c) => (
               <ShortsCandidateCard
                 key={c.id}
@@ -60,11 +58,11 @@ export function RightPanel({
               />
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Generated Shorts */}
-      <div className="shrink-0">
+      <div className="shrink-0 border-t border-border">
         <GeneratedShortsGrid />
       </div>
     </div>

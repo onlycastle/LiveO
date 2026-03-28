@@ -5,19 +5,10 @@ import { Progress } from "@/components/ui/progress";
 import type { ShortsCandidate, IndicatorType } from "@/lib/types";
 
 const indicatorLabels: Record<IndicatorType, string> = {
-  manual: "Manual",
-  chat_velocity: "Chat",
-  superchat: "SuperChat",
-  audio_spike: "Audio",
-  emote_flood: "Emote",
-  sentiment_shift: "Sentiment",
-  viewer_spike: "Viewers",
-  clip_burst: "Clips",
-  kill_event: "Kill",
-  keyword: "Keyword",
-  gift_wave: "Gifts",
-  poll_moment: "Poll",
-  overlay_alert: "Alert",
+  manual: "Manual", chat_velocity: "Chat", superchat: "SuperChat",
+  audio_spike: "Audio", emote_flood: "Emote", sentiment_shift: "Sentiment",
+  viewer_spike: "Viewers", clip_burst: "Clips", kill_event: "Kill",
+  keyword: "Keyword", gift_wave: "Gifts", poll_moment: "Poll", overlay_alert: "Alert",
 };
 
 const indicatorColorMap: Record<string, string> = {
@@ -36,147 +27,34 @@ const indicatorColorMap: Record<string, string> = {
   overlay_alert: "bg-neon-amber/15 text-neon-amber border-neon-amber/20",
 };
 
-/* ── Status → left-edge strip color ── */
-const statusStripColor: Record<ShortsCandidate["status"], string> = {
-  pending: "bg-neon-lime",
-  confirmed: "bg-neon-cyan",
-  generating: "bg-neon-amber",
-  dismissed: "bg-muted-foreground/40",
-  done: "bg-neon-lime",
+const statusConfig: Record<ShortsCandidate["status"], { label: string; color: string; border: string }> = {
+  pending: { label: "NEW", color: "text-neon-lime", border: "border-neon-lime/30" },
+  confirmed: { label: "CONFIRMED", color: "text-neon-cyan", border: "border-neon-cyan/30" },
+  generating: { label: "GENERATING", color: "text-neon-amber", border: "border-neon-amber/30" },
+  dismissed: { label: "DISMISSED", color: "text-muted-foreground", border: "border-muted-foreground/20" },
+  done: { label: "DONE", color: "text-neon-lime", border: "border-neon-lime/30" },
 };
 
-/* ── Status badge config ── */
-const statusConfig: Record<
-  ShortsCandidate["status"],
-  { label: string; color: string; bgColor: string }
-> = {
-  pending: {
-    label: "NEW",
-    color: "text-neon-lime",
-    bgColor: "bg-neon-lime/10 border-neon-lime/25",
-  },
-  confirmed: {
-    label: "CONFIRMED",
-    color: "text-neon-cyan",
-    bgColor: "bg-neon-cyan/10 border-neon-cyan/25",
-  },
-  generating: {
-    label: "GENERATING",
-    color: "text-neon-amber",
-    bgColor: "bg-neon-amber/10 border-neon-amber/25",
-  },
-  dismissed: {
-    label: "DISMISSED",
-    color: "text-muted-foreground",
-    bgColor: "bg-secondary/30 border-muted-foreground/20",
-  },
-  done: {
-    label: "DONE",
-    color: "text-neon-lime",
-    bgColor: "bg-neon-lime/10 border-neon-lime/25",
-  },
-};
-
-/* ── Confidence Ring (SVG donut) ── */
-function ConfidenceRing({
-  value,
-  size = 32,
-  strokeWidth = 3,
-  className = "",
-}: {
-  value: number;
-  size?: number;
-  strokeWidth?: number;
-  className?: string;
-}) {
-  const radius = (size - strokeWidth) / 2;
+/* Confidence ring */
+function ConfidenceRing({ value }: { value: number }) {
+  const radius = 14;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (value / 100) * circumference;
-
-  // Color based on confidence level
-  const ringColor =
-    value >= 80
-      ? "stroke-neon-lime"
-      : value >= 60
-        ? "stroke-neon-cyan"
-        : value >= 40
-          ? "stroke-neon-amber"
-          : "stroke-neon-red";
+  const color = value >= 80 ? "stroke-neon-lime" : value >= 60 ? "stroke-neon-cyan" : "stroke-neon-amber";
 
   return (
-    <div className={`relative shrink-0 ${className}`}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Track */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          className="text-secondary"
-          strokeWidth={strokeWidth}
-        />
-        {/* Value arc */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          className={ringColor}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
+    <div className="relative shrink-0">
+      <svg width="36" height="36" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r={radius} fill="none" stroke="currentColor" className="text-secondary" strokeWidth="3" />
+        <circle cx="18" cy="18" r={radius} fill="none" className={color} strokeWidth="3" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset} transform="rotate(-90 18 18)" />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-mono text-[8px] font-bold text-foreground tabular-nums">
+      <span className="absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold text-foreground tabular-nums">
         {value}
       </span>
     </div>
   );
 }
-
-/* ── Thumbnail with 9:16 crop overlay ── */
-function ThumbnailPreview() {
-  return (
-    <div className="w-16 h-10 rounded bg-secondary/60 border border-border shrink-0 overflow-hidden relative">
-      {/* 16:9 source frame */}
-      <div className="w-full h-full bg-gradient-to-br from-secondary to-background" />
-      {/* 9:16 crop overlay — centered vertical strip */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        {/* Dim the outer areas */}
-        <div className="absolute inset-0 bg-black/40" />
-        {/* Bright 9:16 crop zone */}
-        <div className="relative w-[22%] h-full border border-neon-cyan/50 bg-transparent z-10">
-          <div className="absolute inset-0 bg-neon-cyan/5" />
-          <span className="absolute inset-0 flex items-center justify-center text-[6px] font-mono text-neon-cyan/80 font-bold">
-            9:16
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Pin icon for manual captures ── */
-function PinIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 16 16"
-      fill="currentColor"
-      className={className}
-    >
-      <path d="M9.828 4.172l2 2a1 1 0 010 1.414L9.95 9.464a1 1 0 01-.708.293H7.5L6 12.5 4.5 14l-.354-.354L6.793 11H5.243a1 1 0 01-.707-.293L2.414 8.586a1 1 0 010-1.414l2.122-2.122A4 4 0 019.828 4.172z" />
-    </svg>
-  );
-}
-
-/* ══════════════════════════════════════════════════
-   MAIN COMPONENT
-   ══════════════════════════════════════════════════ */
 
 export function ShortsCandidateCard({
   candidate,
@@ -189,182 +67,106 @@ export function ShortsCandidateCard({
   const isDismissed = candidate.status === "dismissed";
   const config = statusConfig[candidate.status];
 
-  /* ── Dismissed: collapsed single-line view ── */
   if (isDismissed) {
     return (
-      <div className="flex items-center gap-2 rounded-md border border-muted-foreground/15 bg-secondary/10 px-3 py-1.5 group">
-        {/* Left strip — thin vertical bar */}
-        <div className="w-0.5 h-4 rounded-full bg-muted-foreground/30 shrink-0" />
-
-        <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-muted-foreground/60">
-          DISMISSED
-        </span>
-        <span className="text-xs text-muted-foreground/50 truncate flex-1 font-sans">
-          {candidate.title}
-        </span>
-        <span className="text-[9px] font-mono text-muted-foreground/40 tabular-nums shrink-0">
-          {candidate.startTime}
-        </span>
-        <span className="text-[9px] font-mono text-muted-foreground/40 tabular-nums shrink-0">
-          {candidate.confidence}%
-        </span>
-        <button className="text-[9px] font-mono text-neon-cyan/60 hover:text-neon-cyan transition-colors shrink-0 opacity-0 group-hover:opacity-100">
-          UNDO
-        </button>
+      <div className="shrink-0 w-48 h-full rounded-lg border border-muted-foreground/15 bg-secondary/5 flex flex-col items-center justify-center gap-1 opacity-40">
+        <span className="text-[9px] font-mono text-muted-foreground uppercase">DISMISSED</span>
+        <span className="text-[10px] text-muted-foreground/60 text-center px-3 line-clamp-2">{candidate.title}</span>
+        <button className="text-[9px] font-mono text-neon-cyan/50 hover:text-neon-cyan mt-1">UNDO</button>
       </div>
     );
   }
 
-  /* ── Manual capture overrides ── */
-  const manualLabel = isManual ? "MANUAL" : config.label;
-  const manualBadgeBg = isManual
-    ? "bg-white/10 border-white/30"
-    : config.bgColor;
-  const manualBadgeColor = isManual ? "text-white" : config.color;
-  const cardBorder = isManual
-    ? "border-white/30 ring-1 ring-white/10"
-    : "border-border";
-  const stripColor = isManual
-    ? "bg-white"
-    : statusStripColor[candidate.status];
+  const cardBorder = isManual ? "border-white/30" : config.border;
 
   return (
-    <div
-      className={`relative rounded-lg border overflow-hidden transition-all ${cardBorder} bg-card/60`}
-    >
-      {/* ── Colored left-edge strip ── */}
-      <div
-        className={`absolute left-0 top-0 bottom-0 w-[3px] ${stripColor} ${
-          candidate.status === "generating" ? "animate-neon-pulse" : ""
-        }`}
-      />
-
-      {/* ── Card body ── */}
-      <div className="pl-3.5 pr-3 py-3">
-        {/* Row 1: Status badge + confidence ring + thumbnail */}
-        <div className="flex items-start gap-2.5 mb-2">
-          {/* Left: badge + title block */}
-          <div className="flex-1 min-w-0">
-            {/* Status badge — larger & more prominent */}
-            <div className="flex items-center gap-2 mb-1.5">
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[10px] font-mono font-bold uppercase tracking-wider ${manualBadgeBg} ${manualBadgeColor}`}
-              >
-                {isManual && <PinIcon className="opacity-80" />}
-                {manualLabel}
-              </span>
-
-              {/* Manual: extra bright "MANUAL" call-out */}
-              {isManual && candidate.status === "pending" && (
-                <span className="text-[8px] font-mono font-bold text-white/50 tracking-widest">
-                  PINNED
-                </span>
-              )}
-            </div>
-
-            {/* Title — more prominent */}
-            <h4 className="text-sm font-sans font-semibold text-foreground leading-snug line-clamp-2">
-              {candidate.title}
-            </h4>
-          </div>
-
-          {/* Right: confidence ring + thumbnail */}
-          <div className="flex items-center gap-2 shrink-0">
-            <ConfidenceRing value={candidate.confidence} />
-            <ThumbnailPreview />
-          </div>
-        </div>
-
-        {/* Row 2: Time range — subtle */}
-        <div className="flex items-center gap-1.5 mb-2">
-          <span className="text-[9px] font-mono text-muted-foreground/60 tabular-nums">
-            {candidate.startTime}
-          </span>
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[9px] font-mono text-muted-foreground/60 tabular-nums">
-            {candidate.endTime}
-          </span>
-          <span className="text-[9px] font-mono text-foreground/40">
-            ({candidate.duration})
+    <div className={`shrink-0 w-56 h-full rounded-lg border ${cardBorder} bg-card/60 flex flex-col overflow-hidden`}>
+      {/* Top: 9:16 thumbnail preview */}
+      <div className="relative aspect-[9/12] bg-gradient-to-b from-secondary to-background shrink-0">
+        {/* Status badge */}
+        <div className="absolute top-2 left-2 z-10">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider bg-black/60 backdrop-blur-sm ${config.color}`}>
+            {isManual ? "📌 MANUAL" : config.label}
           </span>
         </div>
 
-        {/* Row 3: Indicator tags */}
-        <div className="flex flex-wrap gap-1 mb-2.5">
+        {/* Confidence ring */}
+        <div className="absolute top-2 right-2 z-10">
+          <ConfidenceRing value={candidate.confidence} />
+        </div>
+
+        {/* Center play icon */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-black/30 border border-white/20 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="white" className="ml-0.5">
+              <path d="M4 3L12 8L4 13V3Z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Bottom overlay with time */}
+        <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black/80 to-transparent" />
+        <div className="absolute bottom-2 inset-x-2 flex items-center justify-between z-10">
+          <span className="text-[9px] font-mono text-white/70 tabular-nums">{candidate.startTime}</span>
+          <span className="text-[9px] font-mono text-white/50">({candidate.duration})</span>
+          <span className="text-[9px] font-mono text-white/70 tabular-nums">{candidate.endTime}</span>
+        </div>
+
+        {/* Generating progress overlay */}
+        {candidate.status === "generating" && candidate.progress != null && (
+          <div className="absolute bottom-0 inset-x-0 z-20">
+            <Progress value={candidate.progress} className="h-1 rounded-none" />
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 flex flex-col p-3 gap-2 min-h-0">
+        {/* Title */}
+        <h4 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+          {candidate.title}
+        </h4>
+
+        {/* Indicator tags */}
+        <div className="flex flex-wrap gap-1">
           {candidate.indicators.map((ind) => (
-            <span
-              key={ind}
-              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono border ${
-                indicatorColorMap[ind] || "bg-secondary text-foreground"
-              }`}
-            >
+            <span key={ind} className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono border ${indicatorColorMap[ind] || "bg-secondary text-foreground"}`}>
               {indicatorLabels[ind]}
             </span>
           ))}
         </div>
 
-        {/* Manual capture transcript context */}
+        {/* Manual transcript context */}
         {isManual && candidate.capturedTranscript && (
-          <div className="mb-2.5 px-2 py-1.5 rounded bg-white/[0.03] border border-white/10">
-            <span className="text-[9px] font-mono text-muted-foreground/70 block mb-0.5">
-              TRANSCRIPT CONTEXT
-            </span>
-            <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2 font-sans">
-              &ldquo;{candidate.capturedTranscript}&rdquo;
-            </p>
-          </div>
+          <p className="text-[9px] text-muted-foreground leading-relaxed line-clamp-2 italic">
+            &ldquo;{candidate.capturedTranscript}&rdquo;
+          </p>
         )}
 
-        {/* Generating progress */}
+        {/* Generating status */}
         {candidate.status === "generating" && candidate.progress != null && (
-          <div className="mb-2.5">
-            <Progress value={candidate.progress} className="h-1" />
-            <span className="text-[9px] font-mono text-neon-amber mt-0.5 block">
-              {candidate.progress}% · ~{Math.max(1, Math.round((100 - candidate.progress) / 10))}s remaining
-            </span>
-          </div>
+          <span className="text-[9px] font-mono text-neon-amber">
+            {candidate.progress}% · ~{Math.max(1, Math.round((100 - candidate.progress) / 10))}s
+          </span>
         )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
 
         {/* Actions */}
         {candidate.status === "pending" && (
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="flex-1 h-7 text-[10px] font-mono font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80"
-            >
+          <div className="flex gap-1.5">
+            <Button size="sm" className="flex-1 h-7 text-[9px] font-mono font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80">
               CONFIRM
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="flex-1 h-7 text-[10px] font-mono font-bold tracking-wider text-muted-foreground hover:text-destructive"
-            >
-              DISMISS
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onPreview(candidate.id)}
-              className="h-7 px-2 text-[10px] font-mono"
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-              >
-                <path d="M4 3L12 8L4 13V3Z" />
-              </svg>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-[9px] font-mono text-muted-foreground hover:text-destructive">
+              SKIP
             </Button>
           </div>
         )}
         {candidate.status === "confirmed" && (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onPreview(candidate.id)}
-            className="w-full h-7 text-[10px] font-mono font-bold tracking-wider border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10"
-          >
+          <Button size="sm" variant="outline" onClick={() => onPreview(candidate.id)}
+            className="w-full h-7 text-[9px] font-mono font-bold tracking-wider border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10">
             PREVIEW
           </Button>
         )}
