@@ -60,7 +60,7 @@ class YtdlpDemoCapture(BaseCapture):
         result = subprocess.run(
             [
                 "yt-dlp", self.video_url,
-                "-f", "best[height<=1080]",
+                "-f", "best[height>=1080]/best[height>=720]/best",
                 "--get-url",
             ],
             capture_output=True, text=True, timeout=30,
