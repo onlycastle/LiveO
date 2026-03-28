@@ -135,7 +135,7 @@ async def test_settings_get_and_update(client: AsyncClient):
     assert resp.status_code == 200
     data = resp.json()
     assert data["shortsDuration"] == "30s"
-    assert data["autoConfirmThreshold"] == 85
+    assert data["autoConfirmThreshold"] == 10
 
     resp = await client.patch("/api/settings", json={"shortsDuration": "15s"})
     assert resp.status_code == 200

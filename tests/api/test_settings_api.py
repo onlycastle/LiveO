@@ -8,7 +8,7 @@ async def test_get_settings_defaults(client: AsyncClient):
     assert resp.status_code == 200
     body = resp.json()
     assert body["shortsDuration"] == "30s"
-    assert body["autoConfirmThreshold"] == 85
+    assert body["autoConfirmThreshold"] == 10
     assert "indicatorSensitivity" in body
 
 
@@ -27,6 +27,7 @@ async def test_settings_round_trip(client: AsyncClient):
     resp = await client.get("/api/settings")
     original = resp.json()
     assert original["shortsDuration"] == "30s"
+    assert original["autoConfirmThreshold"] == 10
 
     # Update
     await client.patch("/api/settings", json={"shortsDuration": "45s"})

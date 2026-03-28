@@ -19,6 +19,21 @@ function formatElapsedTime(totalSeconds: number) {
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
+function parseTimestamp(ts: string): number {
+  const parts = ts.split(":").map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return 0;
+}
+
+function formatDuration(seconds: number): string {
+  const s = Math.max(1, Math.round(seconds));
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  if (m > 0) return `${m}:${rem.toString().padStart(2, "0")}`;
+  return `0:${rem.toString().padStart(2, "0")}`;
+}
+
 export default function Home() {
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -47,12 +62,12 @@ export default function Home() {
 
     // If no transcript lines available yet, create a minimal candidate
     if (transcriptLines.length === 0) {
-      const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
+      const desiredDuration = Math.min(60, Math.round(holdSeconds + 10));
       const endSeconds = Math.max(0, Math.floor(streamStatus.elapsed));
-      const startSeconds = Math.max(0, endSeconds - totalDuration);
+      const startSeconds = Math.max(0, endSeconds - desiredDuration);
       const startTime = formatElapsedTime(startSeconds);
       const endTime = formatElapsedTime(endSeconds);
-      const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
+      const durationStr = formatDuration(endSeconds - startSeconds);
 
       const draftCandidate: Omit<ShortsCandidate, "id" | "progress"> = {
         startTime,
@@ -85,20 +100,20 @@ export default function Home() {
       .map((l) => l.text)
       .join(" ");
 
-    // Duration based on hold time + buffer
-    const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
-    const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
-
     // When start/end transcript lines share the same timestamp, fall back to
     // elapsed-based window so the backend always gets a non-zero clip range.
     let startTime = startLine.timestamp;
     let endTime = endLine.timestamp;
     if (startTime === endTime) {
+      const desiredDuration = Math.min(60, Math.round(holdSeconds + 10));
       const endSeconds = Math.max(0, Math.floor(streamStatus.elapsed));
-      const startSeconds = Math.max(0, endSeconds - totalDuration);
+      const startSeconds = Math.max(0, endSeconds - desiredDuration);
       startTime = formatElapsedTime(startSeconds);
       endTime = formatElapsedTime(endSeconds);
     }
+
+    // Compute duration from actual start/end timestamps
+    const durationStr = formatDuration(parseTimestamp(endTime) - parseTimestamp(startTime));
 
     const newCandidate: Omit<ShortsCandidate, "id" | "progress"> = {
       startTime,

@@ -476,4 +476,4 @@ interface SensitivityConfig {
 
 ## Auto-confirm Policy
 
-confidence score가 사용자 설정 임계값(기본 85%) 이상인 후보는 자동으로 confirm 처리되어 쇼츠 생성 파이프라인에 진입한다. 임계값 이하는 사용자 수동 confirm/dismiss 필요.
+confidence score가 사용자 설정 임계값(기본 10%) 이상인 후보는 자동으로 confirm 처리되어 쇼츠 생성 파이프라인에 진입한다. 임계값 이하는 사용자 수동 confirm/dismiss 필요.

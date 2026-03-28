@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-03-28T23:52:54.144Z",
-  "turn_count": 46,
-  "last_agent_output": "원인은 거의 맞습니다. 지금 코드 기준으로는 `자동 후보 감지`와 `자동 영상 생성`이 다른 문턱을 쓰고 있어서, 수동은 되는데 자동 생성은 안 붙는 상황이 충분히 나옵니다.\n\n-"
+  "last_turn_at": "2026-03-28T23:56:03.782Z",
+  "turn_count": 47,
+  "last_agent_output": "`auto-confirm threshold` 기본값을 `10`으로 낮췄습니다. 백엔드 기본 설정은 [backend/models.py:141](/Users/sungmancho/pro"
 }

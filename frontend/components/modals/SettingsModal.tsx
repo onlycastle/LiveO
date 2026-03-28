@@ -38,7 +38,7 @@ export function SettingsModal({
   onOpenChange: (v: boolean) => void;
 }) {
   const [selectedDuration, setSelectedDuration] = useState("30s");
-  const [autoConfirmThreshold, setAutoConfirmThreshold] = useState(85);
+  const [autoConfirmThreshold, setAutoConfirmThreshold] = useState(10);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,7 +102,7 @@ export function SettingsModal({
               <Slider
                 value={[autoConfirmThreshold]}
                 onValueChange={(v) => setAutoConfirmThreshold(Array.isArray(v) ? v[0] : v)}
-                min={50}
+                min={10}
                 max={100}
                 step={5}
                 className="flex-1"

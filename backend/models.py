@@ -140,7 +140,7 @@ class GenerateRequest(BaseModel):
 
 class Settings(BaseModel):
     shorts_duration: str = Field(default="30s", alias="shortsDuration")
-    auto_confirm_threshold: int = Field(default=85, alias="autoConfirmThreshold")
+    auto_confirm_threshold: int = Field(default=10, alias="autoConfirmThreshold")
     indicator_sensitivity: dict[str, int] = Field(
         default_factory=lambda: {
             "chat_velocity": 50,
