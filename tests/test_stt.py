@@ -65,6 +65,18 @@ class TestWhisperSTT:
 
 
 class TestCreateSTT:
+    @patch("backend.stt.WhisperSTT")
+    def test_faster_whisper_alias_uses_whisper_provider(self, mock_whisper_cls):
+        sentinel = object()
+        mock_whisper_cls.return_value = sentinel
+
+        with patch.dict(os.environ, {"LIVEO_STT_PROVIDER": "faster-whisper"}, clear=True):
+            with patch.dict("sys.modules", {"faster_whisper": MagicMock()}):
+                stt = create_stt()
+
+        assert stt is sentinel
+        mock_whisper_cls.assert_called_once_with()
+
     @patch("backend.stt.WhisperSTT", side_effect=ImportError)
     def test_auto_no_provider_returns_none(self, _):
         with patch.dict(os.environ, {}, clear=True):
@@ -75,3 +87,12 @@ class TestCreateSTT:
     def test_explicit_unavailable_returns_none(self):
         stt = create_stt("nonexistent")
         assert stt is None
+
+    def test_auto_missing_provider_warning_includes_install_command(self, caplog):
+        with patch.dict(os.environ, {}, clear=True):
+            with patch.dict("sys.modules", {"faster_whisper": None}):
+                with caplog.at_level("WARNING"):
+                    stt = create_stt("auto")
+
+        assert stt is None
+        assert 'pip install -e ".[stt]"' in caplog.text

@@ -1,6 +1,6 @@
 "use client";
 
-import { indicators } from "@/lib/mock-data";
+import type { Indicator } from "@/lib/types";
 
 const barColorMap: Record<string, string> = {
   "neon-lime": "bg-neon-lime",
@@ -10,11 +10,11 @@ const barColorMap: Record<string, string> = {
   "neon-violet": "bg-neon-violet",
 };
 
-export function IndicatorDashboard() {
+export function IndicatorDashboard({ indicators }: { indicators: Indicator[] }) {
   const activeCount = indicators.filter((i) => i.active).length;
 
   return (
-    <div className="flex flex-col">
+    <div data-testid="indicator-dashboard" className="flex flex-col">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-neon-lime animate-neon-pulse" />

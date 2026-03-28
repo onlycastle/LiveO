@@ -3,24 +3,35 @@
 import { useState, useEffect, useRef } from "react";
 import { ShortsCandidateCard } from "@/components/shorts/ShortsCandidateCard";
 import { GeneratedShortsGrid } from "@/components/shorts/GeneratedShortsGrid";
-import type { ShortsCandidate } from "@/lib/types";
+import type { ShortsCandidate, GeneratedShort } from "@/lib/types";
 
 export function RightPanel({
   candidates,
+  generatedShorts,
   onPreview,
+  onConfirm,
+  onDismiss,
+  onUndo,
 }: {
   candidates: ShortsCandidate[];
+  generatedShorts: GeneratedShort[];
   onPreview: (id: string) => void;
+  onConfirm: (id: string) => void;
+  onDismiss: (id: string) => void;
+  onUndo: (id: string) => void;
 }) {
   const [headerFlash, setHeaderFlash] = useState(false);
   const prevCountRef = useRef(candidates.length);
 
   useEffect(() => {
     if (candidates.length > prevCountRef.current) {
-      setHeaderFlash(true);
-      const timer = setTimeout(() => setHeaderFlash(false), 1200);
+      const frame = window.requestAnimationFrame(() => setHeaderFlash(true));
+      const timer = window.setTimeout(() => setHeaderFlash(false), 1200);
       prevCountRef.current = candidates.length;
-      return () => clearTimeout(timer);
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+      };
     }
     prevCountRef.current = candidates.length;
   }, [candidates.length]);
@@ -55,6 +66,9 @@ export function RightPanel({
                 key={c.id}
                 candidate={c}
                 onPreview={onPreview}
+                onConfirm={onConfirm}
+                onDismiss={onDismiss}
+                onUndo={onUndo}
               />
             ))}
           </div>
@@ -63,7 +77,7 @@ export function RightPanel({
 
       {/* Generated Shorts */}
       <div className="shrink-0 border-t border-border">
-        <GeneratedShortsGrid />
+        <GeneratedShortsGrid generatedShorts={generatedShorts} />
       </div>
     </div>
   );

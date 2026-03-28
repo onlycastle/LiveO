@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any
 
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
@@ -14,10 +17,12 @@ class ConnectionManager:
     async def connect(self, ws: WebSocket) -> None:
         await ws.accept()
         self._connections.append(ws)
+        logger.info("WebSocket client connected | total=%s", len(self._connections))
 
     def disconnect(self, ws: WebSocket) -> None:
         if ws in self._connections:
             self._connections.remove(ws)
+            logger.info("WebSocket client disconnected | total=%s", len(self._connections))
 
     async def broadcast(self, msg_type: str, data: Any) -> None:
         payload = json.dumps({"type": msg_type, "data": data})
@@ -27,6 +32,7 @@ class ConnectionManager:
                 await ws.send_text(payload)
             except Exception:
                 stale.append(ws)
+                logger.exception("Failed to broadcast WebSocket message | type=%s", msg_type)
         for ws in stale:
             self.disconnect(ws)
 

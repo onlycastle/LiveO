@@ -90,8 +90,9 @@ class TestPipelineCallbacks:
 
 
 class TestPipelineSegmentation:
-    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: open(a, "wb").close())
-    def test_produces_segments_and_fires_events(self, mock_extract):
+    @patch.object(Pipeline, "_probe_segment_streams", return_value={"video", "audio"})
+    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: (open(a, "wb").close(), True)[-1])
+    def test_produces_segments_and_fires_events(self, mock_extract, _mock_probe):
         with tempfile.TemporaryDirectory() as seg_dir:
             fake = FakeCapture()
             ring = RingBuffer(max_duration_sec=60)
@@ -119,8 +120,9 @@ class TestPipelineSegmentation:
             assert mock_extract.call_count >= 1
             assert len(ring) >= 1
 
-    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: open(a, "wb").close())
-    def test_ring_buffer_receives_segments(self, mock_extract):
+    @patch.object(Pipeline, "_probe_segment_streams", return_value={"video", "audio"})
+    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: (open(a, "wb").close(), True)[-1])
+    def test_ring_buffer_receives_segments(self, mock_extract, _mock_probe):
         with tempfile.TemporaryDirectory() as seg_dir:
             fake = FakeCapture()
             ring = RingBuffer(max_duration_sec=60)
@@ -135,8 +137,71 @@ class TestPipelineSegmentation:
             pipeline.stop()
 
             assert len(ring) >= 1
-            for _, path in ring.segments:
-                assert os.path.exists(path)
+            for segment in ring.segments:
+                assert os.path.exists(segment.path)
+
+    @patch.object(Pipeline, "_probe_segment_streams", return_value={"video", "audio"})
+    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: (open(a, "wb").close(), True)[-1])
+    def test_segment_timestamps_follow_elapsed_timeline(self, mock_extract, _mock_probe):
+        with tempfile.TemporaryDirectory() as seg_dir:
+            proc = MagicMock()
+            proc.stdout.read = MagicMock(side_effect=[b"first", b"second", b""])
+
+            capture = MagicMock(spec=BaseCapture)
+            capture.video_stdout = proc
+            capture.is_alive = MagicMock(side_effect=[True, True, True])
+
+            pipeline = Pipeline(
+                capture=capture,
+                ring_buffer=RingBuffer(max_duration_sec=60),
+                segment_duration=5.0,
+                output_dir=seg_dir,
+            )
+            events_received: list[SegmentReadyEvent] = []
+            pipeline.on_segment(events_received.append)
+            pipeline._running = True
+
+            with patch("backend.pipeline.time.monotonic", side_effect=[100.0, 105.8, 112.1]):
+                pipeline._segment_loop()
+
+            assert len(events_received) == 2
+            assert events_received[0].timestamp_start == pytest.approx(0.0)
+            assert events_received[0].timestamp_end == pytest.approx(5.8)
+            assert events_received[1].timestamp_start == pytest.approx(5.8)
+            assert events_received[1].timestamp_end == pytest.approx(12.1)
+
+    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: (open(a, "wb").close(), True)[-1])
+    def test_invalid_segment_remains_buffered_until_decodable(self, mock_extract):
+        with tempfile.TemporaryDirectory() as seg_dir:
+            proc = MagicMock()
+            proc.stdout.read = MagicMock(side_effect=[b"first", b"second", b""])
+
+            capture = MagicMock(spec=BaseCapture)
+            capture.video_stdout = proc
+            capture.is_alive = MagicMock(side_effect=[True, True, True])
+
+            pipeline = Pipeline(
+                capture=capture,
+                ring_buffer=RingBuffer(max_duration_sec=60),
+                segment_duration=5.0,
+                output_dir=seg_dir,
+            )
+            events_received: list[SegmentReadyEvent] = []
+            pipeline.on_segment(events_received.append)
+            pipeline._running = True
+
+            with patch.object(
+                Pipeline,
+                "_probe_segment_streams",
+                side_effect=[set(), {"video", "audio"}],
+            ):
+                with patch("backend.pipeline.time.monotonic", side_effect=[100.0, 105.8, 112.1]):
+                    pipeline._segment_loop()
+
+            assert len(events_received) == 1
+            assert events_received[0].timestamp_start == pytest.approx(0.0)
+            assert events_received[0].timestamp_end == pytest.approx(12.1)
+            assert mock_extract.call_count == 1
 
 
 class TestPipelineLifecycle:

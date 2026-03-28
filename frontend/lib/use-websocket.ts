@@ -1,8 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws/events";
+function resolveWsUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_WS_URL?.trim();
+  if (configured) {
+    return configured;
+  }
+
+  if (typeof window === "undefined") {
+    return "ws://localhost:8000/ws/events";
+  }
+
+  const scheme = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${scheme}://${window.location.hostname}:8000/ws/events`;
+}
 
 type MessageHandler = (type: string, data: Record<string, unknown>) => void;
 
@@ -10,10 +22,13 @@ export function useWebSocket(onMessage: MessageHandler) {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
   const onMessageRef = useRef(onMessage);
-  onMessageRef.current = onMessage;
 
   useEffect(() => {
-    const ws = new WebSocket(WS_URL);
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  useEffect(() => {
+    const ws = new WebSocket(resolveWsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => setConnected(true);

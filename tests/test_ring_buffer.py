@@ -28,7 +28,7 @@ class TestRingBufferBasic:
     def test_add_segment(self, tmp_dir):
         buf = RingBuffer()
         path = _create_segment(tmp_dir, "seg_001.ts")
-        buf.add_segment(1.0, path)
+        buf.add_segment(1.0, 6.0, path)
         assert len(buf) == 1
 
     def test_get_range_returns_matching(self, tmp_dir):
@@ -36,22 +36,22 @@ class TestRingBufferBasic:
         p1 = _create_segment(tmp_dir, "seg_001.ts")
         p2 = _create_segment(tmp_dir, "seg_002.ts")
         p3 = _create_segment(tmp_dir, "seg_003.ts")
-        buf.add_segment(10.0, p1)
-        buf.add_segment(20.0, p2)
-        buf.add_segment(30.0, p3)
+        buf.add_segment(10.0, 15.0, p1)
+        buf.add_segment(20.0, 25.0, p2)
+        buf.add_segment(30.0, 35.0, p3)
         result = buf.get_range(15.0, 25.0)
-        assert result == [p2]
+        assert result == [p1, p2]
 
     def test_get_range_inclusive(self, tmp_dir):
         buf = RingBuffer()
         p1 = _create_segment(tmp_dir, "seg_001.ts")
-        buf.add_segment(10.0, p1)
+        buf.add_segment(10.0, 10.0, p1)
         assert buf.get_range(10.0, 10.0) == [p1]
 
     def test_get_range_no_match(self, tmp_dir):
         buf = RingBuffer()
         p1 = _create_segment(tmp_dir, "seg_001.ts")
-        buf.add_segment(10.0, p1)
+        buf.add_segment(10.0, 15.0, p1)
         assert buf.get_range(20.0, 30.0) == []
 
 
@@ -60,8 +60,8 @@ class TestRingBufferCleanup:
         buf = RingBuffer(max_duration_sec=10)
         p1 = _create_segment(tmp_dir, "old.ts")
         p2 = _create_segment(tmp_dir, "new.ts")
-        buf.add_segment(0.0, p1)
-        buf.add_segment(15.0, p2)
+        buf.add_segment(0.0, 5.0, p1)
+        buf.add_segment(15.0, 20.0, p2)
         assert len(buf) == 1
         assert not os.path.exists(p1)
         assert os.path.exists(p2)
@@ -71,7 +71,8 @@ class TestRingBufferCleanup:
         paths = []
         for i in range(5):
             p = _create_segment(tmp_dir, f"seg_{i}.ts")
-            buf.add_segment(float(i * 10), p)
+            start = float(i * 10)
+            buf.add_segment(start, start + 5.0, p)
             paths.append(p)
         assert len(buf) == 5
         for p in paths:
@@ -80,9 +81,9 @@ class TestRingBufferCleanup:
     def test_cleanup_with_missing_file(self, tmp_dir):
         buf = RingBuffer(max_duration_sec=10)
         fake_path = os.path.join(tmp_dir, "ghost.ts")
-        buf.add_segment(0.0, fake_path)
+        buf.add_segment(0.0, 5.0, fake_path)
         p2 = _create_segment(tmp_dir, "new.ts")
-        buf.add_segment(15.0, p2)
+        buf.add_segment(15.0, 20.0, p2)
         assert len(buf) == 1
 
     def test_default_max_duration_is_300(self):
@@ -95,7 +96,7 @@ class TestRingBufferClear:
         buf = RingBuffer()
         for i in range(3):
             p = _create_segment(tmp_dir, f"seg_{i}.ts")
-            buf.add_segment(float(i), p)
+            buf.add_segment(float(i), float(i + 1), p)
         buf.clear()
         assert len(buf) == 0
         remaining = os.listdir(tmp_dir)
@@ -112,15 +113,15 @@ class TestRingBufferStress:
         buf = RingBuffer(max_duration_sec=300)
         for i in range(100):
             p = _create_segment(tmp_dir, f"seg_{i:04d}.ts")
-            buf.add_segment(float(i), p)
+            buf.add_segment(float(i), float(i + 1), p)
         assert len(buf) == 100
 
     def test_sliding_window(self, tmp_dir):
         buf = RingBuffer(max_duration_sec=5)
         for i in range(20):
             p = _create_segment(tmp_dir, f"seg_{i:04d}.ts")
-            buf.add_segment(float(i), p)
+            buf.add_segment(float(i), float(i + 1), p)
         assert len(buf) <= 6
-        oldest_ts = buf.segments[0][0]
-        newest_ts = buf.segments[-1][0]
+        oldest_ts = buf.segments[0].timestamp_end
+        newest_ts = buf.segments[-1].timestamp_end
         assert newest_ts - oldest_ts <= 5

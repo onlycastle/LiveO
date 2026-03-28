@@ -2,12 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { LandingScreen } from "@/components/landing/LandingScreen";
+import { DebugConsole } from "@/components/debug/DebugConsole";
 import { Header } from "@/components/layout/Header";
 import { LeftPanel } from "@/components/layout/LeftPanel";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { ShortsPreviewModal } from "@/components/shorts/ShortsPreviewModal";
-import { shortsCandidates as initialCandidates, transcriptLines } from "@/lib/mock-data";
+import { useLiveO } from "@/lib/use-liveo";
 import type { ShortsCandidate } from "@/lib/types";
 
 export default function Home() {
@@ -15,12 +16,50 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<ShortsCandidate[]>(initialCandidates);
+
+  const {
+    candidates,
+    setCandidates,
+    generatedShorts,
+    transcriptLines,
+    indicators,
+    streamStatus,
+    wsConnected,
+    debugLogs,
+    confirmCandidate,
+    dismissCandidate,
+    undoCandidate,
+    generateShorts,
+  } = useLiveO();
 
   const handleManualCapture = useCallback((holdDurationMs: number) => {
     // Calculate how many transcript lines the hold covers (~3s per line)
     const holdSeconds = holdDurationMs / 1000;
     const linesForHold = Math.max(2, Math.ceil(holdSeconds / 3));
+
+    // If no transcript lines available yet, create a minimal candidate
+    if (transcriptLines.length === 0) {
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+      const totalDuration = Math.min(60, Math.round(holdSeconds + 10));
+      const durationStr = totalDuration >= 60 ? "1:00" : `0:${totalDuration.toString().padStart(2, "0")}`;
+
+      const newCandidate: ShortsCandidate = {
+        id: `manual-${Date.now()}`,
+        startTime: timeStr,
+        endTime: timeStr,
+        duration: durationStr,
+        thumbnailUrl: "",
+        title: `Manual Capture at ${timeStr}`,
+        indicators: ["manual"],
+        confidence: 100,
+        status: "pending",
+        isManual: true,
+      };
+
+      setCandidates((prev) => [newCandidate, ...prev]);
+      return;
+    }
 
     // Anchor at "current" position + extend by hold duration + buffer
     const bufferLines = 2; // extra context before/after
@@ -46,7 +85,7 @@ export default function Home() {
       endTime: endLine.timestamp,
       duration: durationStr,
       thumbnailUrl: "",
-      title: `📌 Manual Capture — "${anchorLine.text.slice(0, 24)}..."`,
+      title: `Manual Capture -- "${anchorLine.text.slice(0, 24)}..."`,
       indicators: ["manual"],
       confidence: 100,
       status: "pending",
@@ -55,7 +94,7 @@ export default function Home() {
     };
 
     setCandidates((prev) => [newCandidate, ...prev]);
-  }, []);
+  }, [transcriptLines, setCandidates]);
 
   if (!streamUrl) {
     return <LandingScreen onConnect={setStreamUrl} />;
@@ -63,19 +102,36 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <Header onSettingsOpen={() => setSettingsOpen(true)} />
+      <Header
+        onSettingsOpen={() => setSettingsOpen(true)}
+        streamUrl={streamUrl}
+        isLive={streamStatus.isLive}
+        wsConnected={wsConnected}
+        elapsed={Math.max(0, Math.floor(streamStatus.elapsed))}
+        shortsCount={generatedShorts.length}
+        queueCount={candidates.filter((candidate) => !["dismissed", "done"].includes(candidate.status)).length}
+      />
 
       <div className="flex-1 flex min-h-0">
         <div className="w-[40%] min-w-[480px] border-r border-border">
-          <LeftPanel onCapture={handleManualCapture} />
+          <LeftPanel
+            onCapture={handleManualCapture}
+            transcriptLines={transcriptLines}
+            indicators={indicators}
+            streamUrl={streamUrl ?? undefined}
+          />
         </div>
         <div className="flex-1 min-w-[640px]">
           <RightPanel
             candidates={candidates}
+            generatedShorts={generatedShorts}
             onPreview={(id) => {
               setPreviewId(id);
               setPreviewOpen(true);
             }}
+            onConfirm={confirmCandidate}
+            onDismiss={dismissCandidate}
+            onUndo={undoCandidate}
           />
         </div>
       </div>
@@ -85,6 +141,15 @@ export default function Home() {
         open={previewOpen}
         onOpenChange={setPreviewOpen}
         shortId={previewId}
+        onGenerate={generateShorts}
+      />
+      <DebugConsole
+        logs={debugLogs}
+        wsConnected={wsConnected}
+        streamStatus={streamStatus}
+        streamUrl={streamUrl}
+        candidateCount={candidates.length}
+        generatedCount={generatedShorts.length}
       />
     </div>
   );

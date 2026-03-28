@@ -27,6 +27,9 @@ export interface TranscriptLine {
   id: string;
   timestamp: string;
   text: string;
+  start?: number;
+  end?: number;
+  confidence?: number;
   speaker?: string;
   isHighlight?: boolean;
 }
@@ -52,6 +55,7 @@ export interface GeneratedShort {
   id: string;
   title: string;
   thumbnailUrl: string;
+  artifactUrl?: string;
   duration: string;
   createdAt: string;
   indicators: IndicatorType[];
@@ -64,4 +68,26 @@ export interface TimelineEvent {
   time: number; // seconds from start
   type: IndicatorType;
   intensity: number; // 0-1
+}
+
+export type DebugLogLevel = "debug" | "info" | "warning" | "error";
+
+export interface DebugLogEntry {
+  id: string;
+  timestamp: string;
+  origin: "backend" | "frontend";
+  source: string;
+  event: string;
+  level: DebugLogLevel;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface StreamStatus {
+  isLive: boolean;
+  elapsed: number;
+  captureMethod: string;
+  error?: string | null;
+  segmentCount: number;
+  sttAvailable?: boolean;
 }

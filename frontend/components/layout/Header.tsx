@@ -1,16 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
-  const [elapsed, setElapsed] = useState(0);
-  const connected = true;
-
-  useEffect(() => {
-    const timer = setInterval(() => setElapsed((e) => e + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
+export function Header({
+  onSettingsOpen,
+  streamUrl,
+  isLive,
+  wsConnected,
+  elapsed,
+  shortsCount,
+  queueCount,
+}: {
+  onSettingsOpen: () => void;
+  streamUrl?: string | null;
+  isLive: boolean;
+  wsConnected: boolean;
+  elapsed: number;
+  shortsCount: number;
+  queueCount: number;
+}) {
+  const statusLabel = isLive ? "LIVE" : "OFFLINE";
+  const connectionColor = wsConnected ? "bg-neon-lime neon-glow-lime animate-neon-pulse" : "bg-destructive";
+  const streamLabel = streamUrl ?? "No stream connected";
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -39,19 +50,13 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
       <div className="flex items-center gap-2 flex-1 max-w-md">
         <div className="flex-1 h-8 rounded-md bg-secondary/60 border border-border px-3 flex items-center">
           <span className="text-xs font-mono text-muted-foreground truncate">
-            twitch.tv/valorant
+            {streamLabel}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              connected
-                ? "bg-neon-lime neon-glow-lime animate-neon-pulse"
-                : "bg-destructive"
-            }`}
-          />
+          <div className={`w-2 h-2 rounded-full ${connectionColor}`} />
           <span className="text-xs font-mono text-muted-foreground">
-            {connected ? "LIVE" : "OFFLINE"}
+            {statusLabel}
           </span>
         </div>
       </div>
@@ -65,7 +70,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
             SESSION
           </span>
           <div className="w-2 h-2 rounded-full bg-neon-red animate-neon-pulse" />
-          <span className="font-mono text-sm text-foreground tabular-nums">
+          <span data-testid="header-session-timer" className="font-mono text-sm text-foreground tabular-nums">
             {formatTime(elapsed)}
           </span>
         </div>
@@ -76,8 +81,8 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
           <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
             SHORTS
           </span>
-          <span className="font-mono text-sm text-neon-lime">
-            3
+          <span data-testid="header-shorts-count" className="font-mono text-sm text-neon-lime">
+            {shortsCount}
           </span>
         </div>
 
@@ -87,7 +92,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
           <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider">
             QUEUE
           </span>
-          <span className="font-mono text-sm text-neon-amber">2</span>
+          <span className="font-mono text-sm text-neon-amber">{queueCount}</span>
         </div>
       </div>
 
@@ -97,6 +102,7 @@ export function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
         variant="ghost"
         size="sm"
         onClick={onSettingsOpen}
+        data-testid="settings-button"
         className="h-8 px-2.5 text-muted-foreground hover:text-foreground"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import os
 import struct
 import tempfile
@@ -9,6 +10,11 @@ import pytest
 
 from backend.stt import TranscriptSegment, WhisperSTT, create_stt
 from backend.vad import SileroVAD
+
+requires_whisper = pytest.mark.skipif(
+    not importlib.util.find_spec("faster_whisper"),
+    reason="faster-whisper not installed (optional STT dependency)",
+)
 
 
 def _make_wav(path: str, duration_sec: float = 1.0, sample_rate: int = 16000) -> str:
@@ -40,6 +46,7 @@ class TestWhisperSTT:
         stt = WhisperSTT(model_size="tiny")
         assert stt._model_size == "tiny"
 
+    @requires_whisper
     def test_transcribe_silent_audio(self):
         stt = WhisperSTT(model_size="tiny")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
@@ -48,6 +55,7 @@ class TestWhisperSTT:
             os.unlink(f.name)
         assert isinstance(results, list)
 
+    @requires_whisper
     def test_transcribe_with_offset(self):
         stt = WhisperSTT(model_size="tiny")
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
@@ -60,10 +68,12 @@ class TestWhisperSTT:
 
 
 class TestCreateSTT:
+    @requires_whisper
     def test_whisper_provider(self):
         stt = create_stt("whisper")
         assert isinstance(stt, WhisperSTT)
 
+    @requires_whisper
     def test_auto_provider_without_deepgram_key(self):
         old = os.environ.pop("DEEPGRAM_API_KEY", None)
         try:

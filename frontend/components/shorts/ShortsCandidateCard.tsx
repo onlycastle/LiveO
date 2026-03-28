@@ -59,9 +59,15 @@ function ConfidenceRing({ value }: { value: number }) {
 export function ShortsCandidateCard({
   candidate,
   onPreview,
+  onConfirm,
+  onDismiss,
+  onUndo,
 }: {
   candidate: ShortsCandidate;
   onPreview: (id: string) => void;
+  onConfirm: (id: string) => void;
+  onDismiss: (id: string) => void;
+  onUndo: (id: string) => void;
 }) {
   const isManual = candidate.isManual;
   const isDismissed = candidate.status === "dismissed";
@@ -69,10 +75,10 @@ export function ShortsCandidateCard({
 
   if (isDismissed) {
     return (
-      <div className="shrink-0 w-48 h-full rounded-lg border border-muted-foreground/15 bg-secondary/5 flex flex-col items-center justify-center gap-1 opacity-40">
+      <div data-testid={`candidate-card-${candidate.id}`} className="shrink-0 w-48 h-full rounded-lg border border-muted-foreground/15 bg-secondary/5 flex flex-col items-center justify-center gap-1 opacity-40">
         <span className="text-[9px] font-mono text-muted-foreground uppercase">DISMISSED</span>
         <span className="text-[10px] text-muted-foreground/60 text-center px-3 line-clamp-2">{candidate.title}</span>
-        <button className="text-[9px] font-mono text-neon-cyan/50 hover:text-neon-cyan mt-1">UNDO</button>
+        <button data-testid={`candidate-undo-${candidate.id}`} className="text-[9px] font-mono text-neon-cyan/50 hover:text-neon-cyan mt-1" onClick={() => onUndo(candidate.id)}>UNDO</button>
       </div>
     );
   }
@@ -80,7 +86,7 @@ export function ShortsCandidateCard({
   const cardBorder = isManual ? "border-white/30" : config.border;
 
   return (
-    <div className={`shrink-0 w-56 h-full rounded-lg border ${cardBorder} bg-card/60 flex flex-col overflow-hidden`}>
+    <div data-testid={`candidate-card-${candidate.id}`} className={`shrink-0 w-56 h-full rounded-lg border ${cardBorder} bg-card/60 flex flex-col overflow-hidden`}>
       {/* Top: 9:16 thumbnail preview */}
       <div className="relative aspect-[9/12] bg-gradient-to-b from-secondary to-background shrink-0">
         {/* Status badge */}
@@ -156,16 +162,16 @@ export function ShortsCandidateCard({
         {/* Actions */}
         {candidate.status === "pending" && (
           <div className="flex gap-1.5">
-            <Button size="sm" className="flex-1 h-7 text-[9px] font-mono font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80">
+            <Button data-testid={`candidate-confirm-${candidate.id}`} size="sm" className="flex-1 h-7 text-[9px] font-mono font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80" onClick={() => onConfirm(candidate.id)}>
               CONFIRM
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-[9px] font-mono text-muted-foreground hover:text-destructive">
+            <Button data-testid={`candidate-skip-${candidate.id}`} size="sm" variant="ghost" className="h-7 px-2 text-[9px] font-mono text-muted-foreground hover:text-destructive" onClick={() => onDismiss(candidate.id)}>
               SKIP
             </Button>
           </div>
         )}
         {candidate.status === "confirmed" && (
-          <Button size="sm" variant="outline" onClick={() => onPreview(candidate.id)}
+          <Button data-testid={`candidate-preview-${candidate.id}`} size="sm" variant="outline" onClick={() => onPreview(candidate.id)}
             className="w-full h-7 text-[9px] font-mono font-bold tracking-wider border-neon-cyan/30 text-neon-cyan hover:bg-neon-cyan/10">
             PREVIEW
           </Button>

@@ -162,3 +162,53 @@ class TestTranscriptProcessor:
         assert len(received) == 2
         assert received[0].id != received[1].id
         assert received[0].id.startswith("t-")
+
+    def test_reports_completion_when_no_speech(self):
+        completions: list[tuple[str, float, str, int]] = []
+        vad = SileroVAD()
+        vad._model = False
+        proc = TranscriptProcessor(
+            on_transcript=lambda _: None,
+            stt=FakeSTT(),
+            vad=vad,
+            on_segment_complete=lambda audio_path, ts_start, outcome, transcript_count: completions.append(
+                (audio_path, ts_start, outcome, transcript_count),
+            ),
+        )
+        proc.start()
+
+        silent_wav = _make_wav([0] * 16000)
+        proc.submit(silent_wav, timestamp_start=12.5)
+        time.sleep(0.5)
+        proc.stop()
+
+        assert len(completions) == 1
+        _, ts_start, outcome, transcript_count = completions[0]
+        assert ts_start == 12.5
+        assert outcome == "no_speech"
+        assert transcript_count == 0
+
+    def test_reports_completion_after_transcribing(self):
+        completions: list[tuple[str, float, str, int]] = []
+        vad = SileroVAD()
+        vad._model = False
+        proc = TranscriptProcessor(
+            on_transcript=lambda _: None,
+            stt=FakeSTT(),
+            vad=vad,
+            on_segment_complete=lambda audio_path, ts_start, outcome, transcript_count: completions.append(
+                (audio_path, ts_start, outcome, transcript_count),
+            ),
+        )
+        proc.start()
+
+        loud_wav = _make_wav([10000] * 16000)
+        proc.submit(loud_wav, timestamp_start=30.0)
+        time.sleep(0.5)
+        proc.stop()
+
+        assert len(completions) == 1
+        _, ts_start, outcome, transcript_count = completions[0]
+        assert ts_start == 30.0
+        assert outcome == "transcribed"
+        assert transcript_count == 1

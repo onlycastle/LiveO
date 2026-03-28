@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
+_WHISPER_PROVIDER_ALIASES = {"whisper", "faster-whisper", "faster_whisper"}
+
 
 @dataclass
 class TranscriptSegment:
@@ -52,9 +54,15 @@ class WhisperSTT(BaseSTT):
         return segments
 
 
+def _normalize_provider(provider: str | None) -> str:
+    normalized = (provider or os.environ.get("LIVEO_STT_PROVIDER", "auto")).strip().lower()
+    if normalized in _WHISPER_PROVIDER_ALIASES:
+        return "whisper"
+    return normalized
+
+
 def create_stt(provider: str | None = None) -> BaseSTT | None:
-    if provider is None:
-        provider = os.environ.get("LIVEO_STT_PROVIDER", "auto")
+    provider = _normalize_provider(provider)
 
     if provider in ("whisper", "auto"):
         try:
@@ -67,5 +75,7 @@ def create_stt(provider: str | None = None) -> BaseSTT | None:
     if provider != "auto":
         logger.warning("Requested STT provider '%s' not available", provider)
     else:
-        logger.warning("No STT provider available (install faster-whisper)")
+        logger.warning(
+            'No STT provider available (install faster-whisper with pip install -e ".[stt]" or pip install -e ".[dev,stt]")'
+        )
     return None

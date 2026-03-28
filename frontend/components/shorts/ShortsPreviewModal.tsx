@@ -12,14 +12,16 @@ export function ShortsPreviewModal({
   open,
   onOpenChange,
   shortId,
+  onGenerate,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   shortId: string | null;
+  onGenerate?: (candidateId: string) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm bg-card border-border p-0 overflow-hidden">
+      <DialogContent data-testid="preview-modal" className="max-w-sm bg-card border-border p-0 overflow-hidden">
         <DialogHeader className="px-5 py-4 border-b border-border">
           <DialogTitle className="text-sm font-mono font-bold tracking-wider">
             <span className="text-neon-lime">GENERATE SHORTS</span>
@@ -56,12 +58,19 @@ export function ShortsPreviewModal({
 
           <div className="flex gap-2 pt-2">
             <Button
+              data-testid="preview-generate-all"
               className="flex-1 h-9 font-mono text-xs font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80"
-              onClick={() => onOpenChange(false)}
+              onClick={() => {
+                if (shortId && onGenerate) {
+                  onGenerate(shortId);
+                }
+                onOpenChange(false);
+              }}
             >
               GENERATE ALL
             </Button>
             <Button
+              data-testid="preview-cancel"
               variant="outline"
               className="h-9 px-4 font-mono text-xs"
               onClick={() => onOpenChange(false)}

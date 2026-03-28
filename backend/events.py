@@ -21,7 +21,7 @@ class StreamEvent(Enum):
 class SegmentReadyEvent:
     event: StreamEvent
     video_path: str
-    audio_path: str
+    audio_path: str | None
     timestamp_start: float
     timestamp_end: float
     duration: float

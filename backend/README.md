@@ -7,8 +7,10 @@
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+pip install -e ".[dev,stt]"
 ```
+
+`faster-whisper` is required for transcription. If you omit the `stt` extra, the backend will start but transcript generation will be skipped.
 
 ### 외부 의존성
 

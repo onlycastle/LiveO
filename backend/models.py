@@ -71,9 +71,12 @@ class GeneratedShort(BaseModel):
     id: str
     title: str
     thumbnail_url: str = Field(default="", alias="thumbnailUrl")
+    artifact_url: str = Field(default="", alias="artifactUrl")
     duration: str
     created_at: str = Field(alias="createdAt")
     indicators: list[IndicatorType]
+    template: str = Field(default="blur_fill")
+    caption: str = Field(default="")
 
     model_config = {"populate_by_name": True}
 
@@ -96,6 +99,7 @@ class StreamStatus(BaseModel):
     capture_method: str = Field(default="", alias="captureMethod")
     error: Optional[str] = None
     segment_count: int = Field(default=0, alias="segmentCount")
+    stt_available: bool = Field(default=True, alias="sttAvailable")
 
     model_config = {"populate_by_name": True}
 
@@ -124,7 +128,7 @@ class ShortsCandidateUpdate(BaseModel):
 
 class GenerateRequest(BaseModel):
     candidate_id: str = Field(alias="candidateId")
-    template: str = Field(pattern="^(crop|letterbox|cam_split|overlay|dynamic)$")
+    template: str = Field(pattern="^(blur_fill|letterbox|cam_split)$")
     crop_position: Optional[str] = Field(default="center", alias="cropPosition")
     trim_start: Optional[float] = Field(default=None, alias="trimStart")
     trim_end: Optional[float] = Field(default=None, alias="trimEnd")

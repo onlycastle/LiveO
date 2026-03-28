@@ -8,19 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { generatedShorts } from "@/lib/mock-data";
+import { resolveBackendUrl } from "@/lib/utils";
 import type { GeneratedShort, ShortsTemplate } from "@/lib/types";
 
 const templateLabels: Record<ShortsTemplate, string> = {
   blur_fill: "BLUR FILL",
   letterbox: "LETTERBOX",
   cam_split: "CAM SPLIT",
-};
-
-const templateDescriptions: Record<ShortsTemplate, string> = {
-  blur_fill: "Original center + blur bg",
-  letterbox: "Original + black bars + caption",
-  cam_split: "Game top + cam bottom",
 };
 
 /* Template visual preview inside the 9:16 card */
@@ -125,7 +119,28 @@ function ShortsViewModal({
 
         {/* Actions */}
         <div className="shrink-0 px-5 py-4 border-t border-border flex gap-2">
-          <Button className="flex-1 h-9 font-mono text-xs font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80">
+          <Button
+            data-testid={`short-download-${short.id}`}
+            className="flex-1 h-9 font-mono text-xs font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80"
+            onClick={async () => {
+              const artifactUrl = resolveBackendUrl(short.artifactUrl);
+              if (artifactUrl) {
+                const response = await fetch(artifactUrl);
+                if (!response.ok) {
+                  throw new Error(`Failed to download artifact (${response.status})`);
+                }
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = objectUrl;
+                a.download = `${short.title}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+              }
+            }}
+          >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1.5">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
@@ -154,6 +169,7 @@ function ShortBundle({ shorts }: { shorts: GeneratedShort[] }) {
     <div className="flex gap-2">
       {/* Recommended — larger card */}
       <div
+        data-testid={`short-bundle-${recommended.title}`}
         onClick={() => setViewShort(recommended)}
         className="relative shrink-0 w-32 rounded-lg border border-neon-lime/30 bg-secondary/30 overflow-hidden hover:border-neon-lime/50 transition-all cursor-pointer"
       >
@@ -209,7 +225,7 @@ function ShortBundle({ shorts }: { shorts: GeneratedShort[] }) {
   );
 }
 
-export function GeneratedShortsGrid() {
+export function GeneratedShortsGrid({ generatedShorts }: { generatedShorts: GeneratedShort[] }) {
   // Group shorts into bundles of 3 (by title)
   const bundleMap = new Map<string, GeneratedShort[]>();
   for (const s of generatedShorts) {
@@ -220,7 +236,7 @@ export function GeneratedShortsGrid() {
   const bundles = Array.from(bundleMap.values());
 
   return (
-    <div className="flex flex-col">
+    <div data-testid="generated-shorts-grid" className="flex flex-col">
       <div className="flex items-center justify-between px-4 py-2 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-neon-lime" />

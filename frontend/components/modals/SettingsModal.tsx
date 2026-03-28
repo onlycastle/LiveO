@@ -42,7 +42,7 @@ export function SettingsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border p-0 overflow-hidden">
+      <DialogContent data-testid="settings-modal" className="max-w-md bg-card border-border p-0 overflow-hidden">
         <DialogHeader className="px-5 pt-5 pb-0">
           <DialogTitle className="text-sm font-mono font-bold tracking-wider">
             <span className="text-neon-lime">SETTINGS</span>
