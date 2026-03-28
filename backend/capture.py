@@ -78,53 +78,54 @@ class RTMPStreamCapture(BaseCapture):
 class YtdlpDemoCapture(BaseCapture):
     def __init__(self, video_url: str):
         self.video_url = video_url
-        self._ytdlp: subprocess.Popen | None = None
         self._ffmpeg: subprocess.Popen | None = None
         self._tmpdir: str | None = None
         self._video_fifo: str | None = None
         self._audio_fifo: str | None = None
 
+    def _resolve_stream_url(self) -> str:
+        result = subprocess.run(
+            [
+                "yt-dlp", self.video_url,
+                "-f", "best[height<=1080]",
+                "--get-url",
+            ],
+            capture_output=True, text=True, timeout=30,
+        )
+        url = result.stdout.strip().splitlines()[0]
+        if not url:
+            raise RuntimeError(f"yt-dlp failed to resolve URL: {result.stderr}")
+        return url
+
     def start(self) -> None:
+        stream_url = self._resolve_stream_url()
+
         self._tmpdir = tempfile.mkdtemp(prefix="liveo_demo_")
         self._video_fifo = os.path.join(self._tmpdir, "video.ts")
         self._audio_fifo = os.path.join(self._tmpdir, "audio.wav")
         os.mkfifo(self._video_fifo)
         os.mkfifo(self._audio_fifo)
 
-        self._ytdlp = subprocess.Popen(
-            [
-                "yt-dlp", self.video_url,
-                "--live-from-start",
-                "-f", "bestvideo[height<=1080]+bestaudio",
-                "--downloader", "ffmpeg",
-                "--hls-use-mpegts",
-                "--fragment-retries", "50",
-                "--retries", "10",
-                "-o", "-",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-
         self._ffmpeg = subprocess.Popen(
             [
-                "ffmpeg", "-i", "pipe:0",
+                "ffmpeg",
+                "-reconnect", "1",
+                "-reconnect_streamed", "1",
+                "-reconnect_delay_max", "5",
+                "-i", stream_url,
                 "-c:v", "copy", "-an", "-f", "mpegts", self._video_fifo,
                 "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
                 "-f", "wav", self._audio_fifo,
             ],
-            stdin=self._ytdlp.stdout,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
 
     def stop(self) -> None:
-        for p in [self._ffmpeg, self._ytdlp]:
-            if p:
-                p.terminate()
-                p.wait()
-        self._ffmpeg = None
-        self._ytdlp = None
+        if self._ffmpeg:
+            self._ffmpeg.terminate()
+            self._ffmpeg.wait()
+            self._ffmpeg = None
         if self._tmpdir:
             shutil.rmtree(self._tmpdir, ignore_errors=True)
             self._tmpdir = None
@@ -132,10 +133,7 @@ class YtdlpDemoCapture(BaseCapture):
             self._audio_fifo = None
 
     def is_alive(self) -> bool:
-        return all(
-            p is not None and p.poll() is None
-            for p in [self._ytdlp, self._ffmpeg]
-        )
+        return self._ffmpeg is not None and self._ffmpeg.poll() is None
 
     @property
     def video_pipe_path(self) -> str | None:

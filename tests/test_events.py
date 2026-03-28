@@ -1,4 +1,4 @@
-from apps.live_server.events import StreamEvent, SegmentReadyEvent
+from backend.events import StreamEvent, SegmentReadyEvent
 
 
 class TestStreamEvent:

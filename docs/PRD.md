@@ -529,8 +529,8 @@ Server → Client:
 | 담당자 | 역할 | 산출물 |
 |--------|------|--------|
 | Jemin | Web UI 디자인 + 프론트엔드 구현 | `DESIGN.md`, Web UI |
-| Seongheum | 라이브 스트리밍 캡처 + 실시간 파이프라인 | `backend.md`, Stream Server |
-| Sungman | Transcription + 하이라이트 감지 + 클립 편집 | `Transcript.md`, Detection Engine |
+| Seongheum | 라이브 스트리밍 캡처 + 실시간 파이프라인 | `backend/docs/streaming.md`, Stream Server |
+| Sungman | Transcription + 하이라이트 감지 + 클립 편집 | `backend/docs/transcript.md`, `backend/docs/editing.md`, Detection Engine |
 
 ## 9. Tech Stack Summary
 

@@ -6,10 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from apps.live_server.capture import BaseCapture
-from apps.live_server.events import SegmentReadyEvent, StreamEvent
-from apps.live_server.pipeline import Pipeline
-from apps.live_server.ring_buffer import RingBuffer
+from backend.capture import BaseCapture
+from backend.events import SegmentReadyEvent, StreamEvent
+from backend.pipeline import Pipeline
+from backend.ring_buffer import RingBuffer
 
 
 class FakeCapture(BaseCapture):

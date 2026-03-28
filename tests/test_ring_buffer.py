@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from apps.live_server.ring_buffer import RingBuffer
+from backend.ring_buffer import RingBuffer
 
 
 @pytest.fixture
