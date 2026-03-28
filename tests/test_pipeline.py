@@ -3,7 +3,7 @@ import os
 import tempfile
 import threading
 import time
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -90,7 +90,8 @@ class TestPipelineCallbacks:
 
 
 class TestPipelineSegmentation:
-    def test_produces_segments_and_fires_events(self):
+    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: open(a, "wb").close())
+    def test_produces_segments_and_fires_events(self, mock_extract):
         with tempfile.TemporaryDirectory() as seg_dir:
             fake = FakeCapture()
             ring = RingBuffer(max_duration_sec=60)
@@ -112,11 +113,14 @@ class TestPipelineSegmentation:
             for evt in events_received:
                 assert evt.event == StreamEvent.SEGMENT_READY
                 assert os.path.exists(evt.video_path)
+                assert evt.audio_path.endswith(".wav")
                 assert evt.duration > 0
 
+            assert mock_extract.call_count >= 1
             assert len(ring) >= 1
 
-    def test_ring_buffer_receives_segments(self):
+    @patch.object(Pipeline, "_extract_audio", side_effect=lambda v, a: open(a, "wb").close())
+    def test_ring_buffer_receives_segments(self, mock_extract):
         with tempfile.TemporaryDirectory() as seg_dir:
             fake = FakeCapture()
             ring = RingBuffer(max_duration_sec=60)

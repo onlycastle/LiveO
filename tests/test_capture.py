@@ -59,7 +59,8 @@ class TestRTMPStreamCapture:
         cmd = mock_popen.call_args[0][0]
         assert "ffmpeg" in cmd
         assert "rtmp://test:1935/live/s" in cmd
-        assert "-an" in cmd
+        assert "-an" not in cmd
+        assert "-c:a" in cmd
         assert "pipe:1" in cmd
 
     @patch("backend.capture.subprocess.Popen")
