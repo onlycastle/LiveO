@@ -20,23 +20,23 @@ export function StreamEmbed() {
         {/* HUD corners — thinner, longer brackets with glow */}
         {/* Top-left */}
         <div className="absolute top-0 left-0">
-          <div className="absolute top-0 left-0 w-8 h-px bg-gradient-to-r from-neon-lime/70 to-transparent" />
-          <div className="absolute top-0 left-0 h-8 w-px bg-gradient-to-b from-neon-lime/70 to-transparent" />
+          <div className="absolute top-0 left-0 w-8 h-px bg-gradient-to-r from-neon-lime/40 to-transparent" />
+          <div className="absolute top-0 left-0 h-8 w-px bg-gradient-to-b from-neon-lime/40 to-transparent" />
         </div>
         {/* Top-right */}
         <div className="absolute top-0 right-0">
-          <div className="absolute top-0 right-0 w-8 h-px bg-gradient-to-l from-neon-lime/70 to-transparent" />
-          <div className="absolute top-0 right-0 h-8 w-px bg-gradient-to-b from-neon-lime/70 to-transparent" />
+          <div className="absolute top-0 right-0 w-8 h-px bg-gradient-to-l from-neon-lime/40 to-transparent" />
+          <div className="absolute top-0 right-0 h-8 w-px bg-gradient-to-b from-neon-lime/40 to-transparent" />
         </div>
         {/* Bottom-left */}
         <div className="absolute bottom-0 left-0">
-          <div className="absolute bottom-0 left-0 w-8 h-px bg-gradient-to-r from-neon-lime/70 to-transparent" />
-          <div className="absolute bottom-0 left-0 h-8 w-px bg-gradient-to-t from-neon-lime/70 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-8 h-px bg-gradient-to-r from-neon-lime/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 h-8 w-px bg-gradient-to-t from-neon-lime/40 to-transparent" />
         </div>
         {/* Bottom-right */}
         <div className="absolute bottom-0 right-0">
-          <div className="absolute bottom-0 right-0 w-8 h-px bg-gradient-to-l from-neon-lime/70 to-transparent" />
-          <div className="absolute bottom-0 right-0 h-8 w-px bg-gradient-to-t from-neon-lime/70 to-transparent" />
+          <div className="absolute bottom-0 right-0 w-8 h-px bg-gradient-to-l from-neon-lime/40 to-transparent" />
+          <div className="absolute bottom-0 right-0 h-8 w-px bg-gradient-to-t from-neon-lime/40 to-transparent" />
         </div>
 
         {/* LIVE badge — refined pill with recording dot */}

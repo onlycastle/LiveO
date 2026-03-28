@@ -220,7 +220,7 @@ export function ShortsCandidateCard({
   const manualBadgeColor = isManual ? "text-white" : config.color;
   const cardBorder = isManual
     ? "border-white/30 ring-1 ring-white/10"
-    : "border-border/60";
+    : "border-border";
   const stripColor = isManual
     ? "bg-white"
     : statusStripColor[candidate.status];
@@ -277,7 +277,7 @@ export function ShortsCandidateCard({
           <span className="text-[9px] font-mono text-muted-foreground/60 tabular-nums">
             {candidate.startTime}
           </span>
-          <div className="flex-1 h-px bg-border/50" />
+          <div className="flex-1 h-px bg-border" />
           <span className="text-[9px] font-mono text-muted-foreground/60 tabular-nums">
             {candidate.endTime}
           </span>

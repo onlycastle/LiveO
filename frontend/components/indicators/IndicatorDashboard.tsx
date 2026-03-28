@@ -32,8 +32,8 @@ export function IndicatorDashboard() {
             key={ind.id}
             className={`flex items-center gap-2 px-2.5 py-2 rounded-md border transition-all ${
               ind.active
-                ? "border-border/50 bg-secondary/30"
-                : "border-transparent bg-secondary/10 opacity-35"
+                ? "border-border bg-secondary/30"
+                : "border-border bg-secondary/10 opacity-35"
             }`}
           >
             <span className="text-sm shrink-0">{ind.icon}</span>

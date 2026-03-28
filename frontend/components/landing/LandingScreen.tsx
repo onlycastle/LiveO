@@ -20,7 +20,7 @@ export function LandingScreen({
     <div className="h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
       {/* Background grid pattern */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `
             linear-gradient(oklch(0.795 0.184 128.25) 1px, transparent 1px),
@@ -31,7 +31,7 @@ export function LandingScreen({
       />
 
       {/* Glow orb */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-neon-lime/[0.03] blur-[120px]" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-neon-lime/[0.02] blur-[150px]" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-xl px-6">
@@ -67,7 +67,7 @@ export function LandingScreen({
           <div
             className={`relative w-full rounded-xl border-2 transition-all duration-300 ${
               isFocused
-                ? "border-neon-lime/60 neon-glow-lime"
+                ? "border-neon-lime/60"
                 : "border-border hover:border-muted-foreground/30"
             }`}
           >

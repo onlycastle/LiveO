@@ -130,7 +130,7 @@ export function SettingsModal({
                   onClick={() => setSelectedDuration(d)}
                   className={`flex-1 h-7 rounded text-[10px] font-mono font-bold transition-all ${
                     d === selectedDuration
-                      ? "border-2 border-neon-lime text-neon-lime bg-neon-lime/10 neon-glow-lime"
+                      ? "border-2 border-neon-lime text-neon-lime bg-neon-lime/10"
                       : "border border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground/70"
                   }`}
                 >

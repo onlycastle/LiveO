@@ -56,7 +56,7 @@ export function ManualCaptureButton({ onCapture }: { onCapture: (holdDurationMs:
         )}
         <span className="relative z-10">
           {justCaptured
-            ? "✓ CAPTURED — SHORTS CANDIDATE ADDED"
+            ? "✓ CAPTURED"
             : isHolding
               ? `● REC ${formatHold(holdSeconds)} — RELEASE TO CREATE SHORT`
               : "HOLD TO CAPTURE"}

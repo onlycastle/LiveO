@@ -163,7 +163,7 @@ export function ShortsPreviewModal({
         {/* ── HEADER ── */}
         <DialogHeader className="px-5 py-3 border-b border-border shrink-0">
           <DialogTitle className="text-sm font-mono font-bold tracking-wider flex items-center gap-2">
-            <span className="text-neon-lime neon-text-lime">CROP &amp; PREVIEW</span>
+            <span className="text-neon-lime">CROP &amp; PREVIEW</span>
             <span className="text-muted-foreground font-normal">
               — 3연킬 + 채팅 폭발 하이라이트
             </span>
@@ -188,7 +188,7 @@ export function ShortsPreviewModal({
                       onClick={() => handlePresetClick(pos)}
                       className={`h-6 px-2.5 rounded text-[9px] font-mono font-bold uppercase tracking-wider transition-all ${
                         cropPosition === pos && customCropLeft === null
-                          ? "border border-neon-cyan text-neon-cyan bg-neon-cyan/10 neon-glow-cyan"
+                          ? "border border-neon-cyan text-neon-cyan bg-neon-cyan/10"
                           : "border border-border text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
                       }`}
                     >
@@ -334,7 +334,7 @@ export function ShortsPreviewModal({
                         disabled
                           ? "border border-border/30 bg-secondary/10 opacity-40 cursor-not-allowed"
                           : isActive
-                          ? "border-2 border-neon-cyan bg-secondary/40 neon-glow-cyan"
+                          ? "border-2 border-neon-cyan bg-secondary/40"
                           : "border border-border bg-secondary/20 hover:border-muted-foreground/40 cursor-pointer"
                       }`}
                     >
@@ -549,7 +549,7 @@ export function ShortsPreviewModal({
 
         {/* ── FOOTER — sticky full-width ── */}
         <div className="border-t border-border px-5 py-3 flex items-center gap-3 shrink-0 bg-card">
-          <Button className="flex-1 h-9 font-mono text-xs font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80 neon-glow-lime">
+          <Button className="flex-1 h-9 font-mono text-xs font-bold tracking-wider bg-neon-lime text-black hover:bg-neon-lime/80">
             GENERATE SHORT
           </Button>
           <Button
