@@ -1,8 +1,9 @@
+import io
 import os
 import tempfile
 import threading
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -13,47 +14,48 @@ from backend.ring_buffer import RingBuffer
 
 
 class FakeCapture(BaseCapture):
-    def __init__(self, tmpdir: str):
-        self._tmpdir = tmpdir
-        self._video_fifo = os.path.join(tmpdir, "video.ts")
-        self._audio_fifo = os.path.join(tmpdir, "audio.wav")
+    def __init__(self, data_rate: int = 4096, chunk_interval: float = 0.05):
+        self._data_rate = data_rate
+        self._chunk_interval = chunk_interval
         self._alive = False
-        self._writer_thread: threading.Thread | None = None
+        self._pipe_r: int | None = None
+        self._pipe_w: int | None = None
+        self._proc = None
+        self._writer: threading.Thread | None = None
 
     def start(self) -> None:
-        os.mkfifo(self._video_fifo)
-        os.mkfifo(self._audio_fifo)
+        r, w = os.pipe()
+        self._pipe_r = r
+        self._pipe_w = w
         self._alive = True
-        self._writer_thread = threading.Thread(target=self._write_data, daemon=True)
-        self._writer_thread.start()
+        self._proc = MagicMock()
+        self._proc.stdout = os.fdopen(r, "rb")
+        self._proc.poll.return_value = None
+        self._writer = threading.Thread(target=self._write_data, daemon=True)
+        self._writer.start()
 
     def _write_data(self) -> None:
-        try:
-            vfd = os.open(self._video_fifo, os.O_WRONLY)
-            seg = 0
-            while self._alive:
-                os.write(vfd, b"\x00" * 4096)
-                time.sleep(0.1)
-                seg += 1
-            os.close(vfd)
-        except OSError:
-            pass
+        while self._alive and self._pipe_w is not None:
+            try:
+                os.write(self._pipe_w, b"\x00" * self._data_rate)
+            except OSError:
+                break
+            time.sleep(self._chunk_interval)
 
     def stop(self) -> None:
         self._alive = False
-        if self._writer_thread:
-            self._writer_thread.join(timeout=5)
+        if self._pipe_w is not None:
+            os.close(self._pipe_w)
+            self._pipe_w = None
+        if self._writer:
+            self._writer.join(timeout=5)
 
     def is_alive(self) -> bool:
         return self._alive
 
     @property
-    def video_pipe_path(self) -> str | None:
-        return self._video_fifo if self._alive else None
-
-    @property
-    def audio_pipe_path(self) -> str | None:
-        return self._audio_fifo if self._alive else None
+    def video_stdout(self) -> MagicMock | None:
+        return self._proc
 
 
 class TestPipelineInit:
@@ -89,13 +91,8 @@ class TestPipelineCallbacks:
 
 class TestPipelineSegmentation:
     def test_produces_segments_and_fires_events(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            fifo_dir = os.path.join(tmpdir, "fifos")
-            os.makedirs(fifo_dir)
-            seg_dir = os.path.join(tmpdir, "segments")
-            os.makedirs(seg_dir)
-
-            fake = FakeCapture(fifo_dir)
+        with tempfile.TemporaryDirectory() as seg_dir:
+            fake = FakeCapture()
             ring = RingBuffer(max_duration_sec=60)
             pipeline = Pipeline(
                 capture=fake,
@@ -120,13 +117,8 @@ class TestPipelineSegmentation:
             assert len(ring) >= 1
 
     def test_ring_buffer_receives_segments(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            fifo_dir = os.path.join(tmpdir, "fifos")
-            os.makedirs(fifo_dir)
-            seg_dir = os.path.join(tmpdir, "segments")
-            os.makedirs(seg_dir)
-
-            fake = FakeCapture(fifo_dir)
+        with tempfile.TemporaryDirectory() as seg_dir:
+            fake = FakeCapture()
             ring = RingBuffer(max_duration_sec=60)
             pipeline = Pipeline(
                 capture=fake,
@@ -146,12 +138,8 @@ class TestPipelineSegmentation:
 class TestPipelineLifecycle:
     def test_start_calls_capture_start(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            fifo_dir = os.path.join(tmpdir, "fifos")
-            os.makedirs(fifo_dir)
-
             mock_cap = MagicMock(spec=BaseCapture)
-            mock_cap.video_pipe_path = None
-            mock_cap.audio_pipe_path = None
+            mock_cap.video_stdout = None
             pipeline = Pipeline(capture=mock_cap, output_dir=tmpdir)
             pipeline.start()
             time.sleep(0.1)
@@ -161,8 +149,7 @@ class TestPipelineLifecycle:
     def test_stop_calls_capture_stop(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             mock_cap = MagicMock(spec=BaseCapture)
-            mock_cap.video_pipe_path = None
-            mock_cap.audio_pipe_path = None
+            mock_cap.video_stdout = None
             pipeline = Pipeline(capture=mock_cap, output_dir=tmpdir)
             pipeline.start()
             time.sleep(0.1)

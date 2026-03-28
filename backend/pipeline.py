@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
-import signal
 import tempfile
 import threading
 import time
@@ -52,32 +50,20 @@ class Pipeline:
         self.capture.stop()
 
     def _segment_loop(self) -> None:
-        video_fifo = self.capture.video_pipe_path
-        audio_fifo = self.capture.audio_pipe_path
-        if not video_fifo or not audio_fifo:
+        proc = self.capture.video_stdout
+        if not proc or not proc.stdout:
             return
 
         seg_index = 0
-        try:
-            video_fd = os.open(video_fifo, os.O_RDONLY | os.O_NONBLOCK)
-        except OSError:
-            return
-
         buf = bytearray()
         last_flush = time.monotonic()
 
         while self._running and self.capture.is_alive():
-            try:
-                chunk = os.read(video_fd, 65536)
-            except BlockingIOError:
-                time.sleep(0.05)
-                continue
+            data = proc.stdout.read(65536)
+            if not data:
+                break
 
-            if not chunk:
-                time.sleep(0.1)
-                continue
-
-            buf.extend(chunk)
+            buf.extend(data)
             now = time.monotonic()
             elapsed = now - last_flush
 
@@ -106,5 +92,3 @@ class Pipeline:
 
                 seg_index += 1
                 last_flush = now
-
-        os.close(video_fd)
