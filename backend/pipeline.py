@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import tempfile
 import threading
 import time
@@ -49,6 +50,18 @@ class Pipeline:
             self._segment_thread = None
         self.capture.stop()
 
+    @staticmethod
+    def _extract_audio(video_path: str, audio_path: str) -> None:
+        subprocess.run(
+            [
+                "ffmpeg", "-i", video_path,
+                "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+                "-y", audio_path,
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
     def _segment_loop(self) -> None:
         proc = self.capture.video_stdout
         if not proc or not proc.stdout:
@@ -75,6 +88,11 @@ class Pipeline:
                     f.write(buf)
                 buf.clear()
 
+                audio_path = os.path.join(
+                    self.output_dir, f"seg_{seg_index:06d}.wav",
+                )
+                self._extract_audio(seg_path, audio_path)
+
                 ts_start = seg_index * self.segment_duration
                 ts_end = ts_start + elapsed
                 self.ring_buffer.add_segment(ts_start, seg_path)
@@ -82,7 +100,7 @@ class Pipeline:
                 event = SegmentReadyEvent(
                     event=StreamEvent.SEGMENT_READY,
                     video_path=seg_path,
-                    audio_path="",
+                    audio_path=audio_path,
                     timestamp_start=ts_start,
                     timestamp_end=ts_end,
                     duration=elapsed,

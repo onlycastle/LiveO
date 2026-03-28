@@ -31,7 +31,7 @@ class RTMPStreamCapture(BaseCapture):
         self._process = subprocess.Popen(
             [
                 "ffmpeg", "-i", self.rtmp_url,
-                "-c:v", "copy", "-an", "-f", "mpegts", "pipe:1",
+                "-c:v", "copy", "-c:a", "aac", "-f", "mpegts", "pipe:1",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
@@ -76,7 +76,7 @@ class YtdlpDemoCapture(BaseCapture):
         self._ffmpeg = subprocess.Popen(
             [
                 "ffmpeg", "-i", stream_url,
-                "-c:v", "copy", "-an", "-f", "mpegts", "pipe:1",
+                "-c:v", "copy", "-c:a", "aac", "-f", "mpegts", "pipe:1",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
