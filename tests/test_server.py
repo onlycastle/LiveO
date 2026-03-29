@@ -186,7 +186,7 @@ async def test_run_generation_renders_from_buffered_segments(monkeypatch, tmp_pa
 
     def fake_concat(segment_paths: list[str], output_path: Path) -> None:
         assert segment_paths == [str(seg_path)]
-        output_path.write_bytes(b"concat")
+        output_path.write_bytes(b"\x00" * 2048)
 
     def fake_render(**kwargs):
         output_dir = Path(kwargs["output_dir"])

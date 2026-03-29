@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 
 function getApiUrl() {
   const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
@@ -24,12 +24,6 @@ export function LandingScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectionLogs, setConnectionLogs] = useState<string[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const appendLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString("en-US", {
       hour12: false,
@@ -161,7 +155,7 @@ export function LandingScreen({
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={mounted ? url.trim() === "" || loading : undefined}
+                disabled={!url.trim() || loading}
                 data-testid="landing-connect-button"
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-neon-lime/40 bg-neon-lime/10 text-[10px] font-mono font-bold text-neon-lime tracking-wider hover:bg-neon-lime/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >

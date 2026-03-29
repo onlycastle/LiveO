@@ -9,6 +9,7 @@ class BufferedSegment:
     timestamp_start: float
     timestamp_end: float
     path: str
+    is_ad: bool = False
 
 
 @dataclass

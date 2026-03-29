@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -60,7 +63,8 @@ def render(
     # Input with trim
     if trim_start is not None:
         cmd.extend(["-ss", str(trim_start)])
-    cmd.extend(["-i", input_path])
+    cmd.extend(["-fflags", "+discardcorrupt", "-err_detect", "ignore_err",
+                "-i", input_path])
     if trim_end is not None and trim_start is not None:
         duration = trim_end - trim_start
         cmd.extend(["-t", str(duration)])
@@ -79,9 +83,15 @@ def render(
         video_path,
     ])
 
-    subprocess.run(cmd, capture_output=True, check=True)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        stderr_tail = (result.stderr or "").strip()[-500:]
+        logger.error("Render ffmpeg failed (exit %d): %s", result.returncode, stderr_tail)
+        raise RuntimeError(f"Render failed (ffmpeg exit {result.returncode}): {stderr_tail}")
 
-    # Generate thumbnail from first frame
+    _validate_video(video_path)
+
+    # Generate thumbnail from first frame (best-effort)
     thumb_cmd = [
         "ffmpeg", "-y",
         "-i", video_path,
@@ -89,7 +99,14 @@ def render(
         "-q:v", "2",
         thumb_path,
     ]
-    subprocess.run(thumb_cmd, capture_output=True, check=True)
+    thumb_result = subprocess.run(thumb_cmd, capture_output=True, text=True)
+    if thumb_result.returncode != 0:
+        stderr_tail = (thumb_result.stderr or "").strip()[-500:]
+        logger.warning(
+            "Thumbnail extraction failed (exit %d), continuing without thumbnail: %s",
+            thumb_result.returncode, stderr_tail,
+        )
+        thumb_path = ""
 
     # Get duration from output
     dur = _get_duration(video_path)
@@ -102,6 +119,29 @@ def render(
         width=1080,
         height=1920,
     )
+
+
+def _validate_video(video_path: str) -> None:
+    """Verify the rendered MP4 contains decodable video frames."""
+    probe = subprocess.run(
+        [
+            "ffprobe", "-v", "error",
+            "-select_streams", "v:0",
+            "-count_packets",
+            "-show_entries", "stream=nb_read_packets",
+            "-of", "csv=p=0",
+            video_path,
+        ],
+        capture_output=True, text=True,
+    )
+    try:
+        packets = int(probe.stdout.strip())
+    except (ValueError, AttributeError):
+        packets = 0
+    if packets == 0:
+        raise RuntimeError(
+            "Rendered video has no decodable video frames — source segments may be corrupt"
+        )
 
 
 def _blur_fill_filter() -> str:

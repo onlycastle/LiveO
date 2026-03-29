@@ -86,6 +86,9 @@ class RTMPStreamCapture(BaseCapture):
         return self._process
 
 
+_COOKIE_BROWSERS = ("chrome", "safari", "firefox")
+
+
 class YtdlpDemoCapture(BaseCapture):
     def __init__(self, video_url: str):
         self.video_url = video_url
@@ -98,42 +101,72 @@ class YtdlpDemoCapture(BaseCapture):
             "Resolving demo stream URL with yt-dlp",
             details={"videoUrl": self.video_url},
         )
-        result = subprocess.run(
-            [
-                "yt-dlp", self.video_url,
-                "-f", "best[height>=1080]/best[height>=720]/best",
-                "--get-url",
-            ],
-            capture_output=True, text=True, timeout=30,
-        )
-        lines = result.stdout.strip().splitlines()
-        if not lines:
-            error = f"yt-dlp returned no URL (stream may be offline): {result.stderr.strip()}"
+
+        # Try with browser cookies first (avoids Twitch ad placeholder)
+        for browser in _COOKIE_BROWSERS:
+            url = self._try_resolve(cookies_from_browser=browser)
+            if url:
+                record_debug_log(
+                    "backend.capture",
+                    "demo_stream_resolved",
+                    "Resolved demo stream URL with browser cookies",
+                    details={"videoUrl": self.video_url, "browser": browser},
+                )
+                return url
+
+        # Fallback: no cookies
+        url = self._try_resolve(cookies_from_browser=None)
+        if url:
             record_debug_log(
                 "backend.capture",
-                "demo_stream_resolve_failed",
-                "yt-dlp returned no stream URL",
-                level="error",
-                details={"videoUrl": self.video_url, "error": error},
+                "demo_stream_resolved",
+                "Resolved demo stream URL without cookies (ads may appear)",
+                details={"videoUrl": self.video_url},
+                level="warning",
             )
-            raise RuntimeError(error)
-        url = lines[0]
-        if not url:
-            error = f"yt-dlp failed to resolve URL: {result.stderr}"
-            record_debug_log(
-                "backend.capture",
-                "demo_stream_resolve_failed",
-                "yt-dlp failed to resolve demo stream URL",
-                level="error",
-                details={"videoUrl": self.video_url, "error": error},
-            )
-            raise RuntimeError(error)
+            return url
+
+        error = f"yt-dlp failed to resolve stream URL for {self.video_url}"
         record_debug_log(
             "backend.capture",
-            "demo_stream_resolved",
-            "Resolved demo stream URL",
+            "demo_stream_resolve_failed",
+            error,
+            level="error",
             details={"videoUrl": self.video_url},
         )
+        raise RuntimeError(error)
+
+    def _try_resolve(self, *, cookies_from_browser: str | None) -> str | None:
+        cmd = [
+            "yt-dlp", self.video_url,
+            "-f", "best[height>=1080]/best[height>=720]/best",
+            "--get-url",
+        ]
+        if cookies_from_browser:
+            cmd += ["--cookies-from-browser", cookies_from_browser]
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        except Exception as exc:
+            record_debug_log(
+                "backend.capture",
+                "demo_stream_resolve_attempt_failed",
+                f"yt-dlp resolve attempt failed (browser={cookies_from_browser})",
+                level="warning",
+                details={"browser": cookies_from_browser, "error": str(exc)},
+            )
+            return None
+
+        url = (result.stdout.strip().splitlines() or [None])[0]
+        if not url:
+            record_debug_log(
+                "backend.capture",
+                "demo_stream_resolve_attempt_empty",
+                f"yt-dlp returned no URL (browser={cookies_from_browser})",
+                level="warning",
+                details={"browser": cookies_from_browser, "stderr": result.stderr.strip()[:200]},
+            )
+            return None
         return url
 
     def start(self) -> None:

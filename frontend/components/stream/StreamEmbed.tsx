@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 interface StreamEmbedProps {
   streamUrl?: string;
 }
@@ -33,11 +35,13 @@ export function StreamEmbed({ streamUrl }: StreamEmbedProps) {
   }
 
   const channel = streamUrl ? extractTwitchChannel(streamUrl) : "valorant";
+  const [parentHost, setParentHost] = useState("localhost");
+  useEffect(() => { setParentHost(window.location.hostname); }, []);
 
   return (
     <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-black">
       <iframe
-        src={`https://player.twitch.tv/?channel=${channel}&parent=localhost`}
+        src={`https://player.twitch.tv/?channel=${channel}&parent=${parentHost}`}
         className="absolute inset-0 w-full h-full"
         allowFullScreen
         title="Live Stream"

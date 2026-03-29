@@ -17,6 +17,7 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, Response
 from starlette.staticfiles import StaticFiles
 
 from .clip_editor import render
@@ -333,6 +334,33 @@ def _extract_segment_frame(video_path: str, frame_offset_sec: float = 1.5) -> st
     return None
 
 
+def _is_ad_frame(frame_path: str | None) -> bool:
+    """Detect Twitch 'Commercial break in progress' by checking for purple-dominant frames."""
+    if not frame_path or not os.path.exists(frame_path):
+        return False
+    try:
+        from PIL import Image
+
+        img = Image.open(frame_path).convert("RGB").resize((64, 64))
+        pixels = list(img.getdata())
+        purple_count = 0
+        for r, g, b in pixels:
+            # Twitch commercial screen: purple/violet gradient (high blue, moderate red, low green)
+            if b > 100 and b > g and r < b and g < 120:
+                purple_count += 1
+        ratio = purple_count / len(pixels)
+        if ratio > 0.5:
+            _debug(
+                "ad_frame_detected",
+                f"Commercial break detected ({ratio:.0%} purple pixels)",
+                details={"framePath": frame_path, "purpleRatio": round(ratio, 3)},
+            )
+            return True
+    except Exception:
+        pass
+    return False
+
+
 def _parse_timecode(value: str) -> float:
     parts = value.strip().split(":")
     if not 1 <= len(parts) <= 3:
@@ -382,6 +410,8 @@ def _build_concat_source(segment_paths: list[str], output_path: Path) -> None:
                 str(concat_file),
                 "-c",
                 "copy",
+                "-avoid_negative_ts",
+                "make_zero",
                 str(output_path),
             ],
             capture_output=True,
@@ -416,7 +446,7 @@ def _render_candidate_artifacts(
     if clip_end <= clip_start:
         raise RuntimeError("Candidate clip window is empty after trim settings")
 
-    segments = ring_buffer.get_segments(clip_start, clip_end)
+    segments = [s for s in ring_buffer.get_segments(clip_start, clip_end) if not s.is_ad]
     if not segments:
         raise RuntimeError("No buffered segments overlap the selected highlight window")
 
@@ -429,6 +459,11 @@ def _render_candidate_artifacts(
         render_dir = Path(tmpdir) / "rendered"
         _build_concat_source([seg.path for seg in segments], source_path)
 
+        if source_path.stat().st_size < 1024:
+            raise RuntimeError(
+                "Concatenated source has no usable video data — all stream segments may be corrupt"
+            )
+
         result = render(
             input_path=str(source_path),
             output_dir=str(render_dir),
@@ -440,15 +475,19 @@ def _render_candidate_artifacts(
         )
 
         artifact_path = Path("artifacts/videos") / f"{short_id}.mp4"
-        thumb_path = Path("artifacts/thumbs") / f"{short_id}.jpg"
         artifact_path.parent.mkdir(parents=True, exist_ok=True)
-        thumb_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(result.video_path, artifact_path)
-        shutil.move(result.thumbnail_path, thumb_path)
+
+        thumbnail_url = ""
+        if result.thumbnail_path and Path(result.thumbnail_path).exists():
+            thumb_path = Path("artifacts/thumbs") / f"{short_id}.jpg"
+            thumb_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(result.thumbnail_path, thumb_path)
+            thumbnail_url = f"/artifacts/thumbs/{short_id}.jpg"
 
     return (
         f"/artifacts/videos/{short_id}.mp4",
-        f"/artifacts/thumbs/{short_id}.jpg",
+        thumbnail_url,
         result.duration,
     )
 
@@ -493,6 +532,12 @@ def _on_segment(event: SegmentReadyEvent) -> None:
         if event.video_path:
             frame_offset = max(0.0, min(2.0, event.duration / 2))
             frame_path = _extract_segment_frame(event.video_path, frame_offset_sec=frame_offset)
+
+        # Skip ad segments — mark in ring buffer and skip detection
+        if _is_ad_frame(frame_path):
+            if _pipeline and _pipeline.ring_buffer.segments:
+                _pipeline.ring_buffer.segments[-1].is_ad = True
+            return
 
         gemini_result = _gemini_detector.analyze(
             audio_path=event.audio_path,
@@ -1034,6 +1079,52 @@ async def stream_status() -> StreamStatus:
         details=status.model_dump(by_alias=True),
     )
     return status
+
+
+# ── HLS Live Preview ──────────────────────────────────────
+
+
+@app.get("/api/stream/hls/live.m3u8")
+async def hls_live_playlist():
+    ring_buffer = _get_generation_buffer()
+    if not ring_buffer or not ring_buffer.segments:
+        raise HTTPException(503, "No stream available")
+
+    segments = ring_buffer.segments
+    target_duration = 6  # ceil of 5s segment duration
+
+    # Parse media sequence from the first segment filename (seg_000042.ts -> 42)
+    first_name = os.path.basename(segments[0].path)
+    media_sequence = int(first_name.split("_")[1].split(".")[0])
+
+    lines = [
+        "#EXTM3U",
+        "#EXT-X-VERSION:3",
+        f"#EXT-X-TARGETDURATION:{target_duration}",
+        f"#EXT-X-MEDIA-SEQUENCE:{media_sequence}",
+    ]
+
+    for seg in segments:
+        duration = seg.timestamp_end - seg.timestamp_start
+        filename = os.path.basename(seg.path)
+        lines.append(f"#EXTINF:{duration:.3f},")
+        lines.append(f"/api/stream/hls/segments/{filename}")
+
+    content = "\n".join(lines) + "\n"
+    return Response(content=content, media_type="application/vnd.apple.mpegurl")
+
+
+@app.get("/api/stream/hls/segments/{filename}")
+async def hls_segment(filename: str):
+    ring_buffer = _get_generation_buffer()
+    if not ring_buffer:
+        raise HTTPException(404, "No stream buffer")
+
+    for seg in ring_buffer.segments:
+        if os.path.basename(seg.path) == filename:
+            return FileResponse(seg.path, media_type="video/mp2t")
+
+    raise HTTPException(404, "Segment not found")
 
 
 @app.get("/api/indicators")

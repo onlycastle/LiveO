@@ -572,9 +572,15 @@ export function useLiveO() {
         }
         break;
       }
-      case "segment_ready":
-        setStreamStatus((current) => ({ ...current, segmentCount: current.segmentCount + 1 }));
+      case "segment_ready": {
+        const segEnd = (data as { timestampEnd?: number }).timestampEnd;
+        setStreamStatus((current) => ({
+          ...current,
+          segmentCount: current.segmentCount + 1,
+          elapsed: typeof segEnd === "number" ? Math.max(current.elapsed, segEnd) : current.elapsed,
+        }));
         break;
+      }
       default:
         appendFrontendLog("warning", "ws_unhandled", `Unhandled WS event type: ${type}`, summarizePayload(data));
         break;
