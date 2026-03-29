@@ -4,3 +4,6 @@
 .claude/settings.local.json
 .env
 .env.*
+__pycache__/
+*.pyc
+artifacts/

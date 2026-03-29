@@ -157,7 +157,7 @@ export function LandingScreen({
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!url.trim() || loading}
+                disabled={url.trim() === "" || loading}
                 data-testid="landing-connect-button"
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-neon-lime/40 bg-neon-lime/10 text-[10px] font-mono font-bold text-neon-lime tracking-wider hover:bg-neon-lime/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >

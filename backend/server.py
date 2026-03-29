@@ -701,7 +701,9 @@ def _check_highlight(
         if result.killfeed_score > 0.3:
             indicators.append("kill_event")
 
-        duration_sec = max(5, int(ts_end - ts_start))
+        duration_sec = max(15, int(ts_end - ts_start))
+        if duration_sec > int(ts_end - ts_start):
+            ts_end = ts_start + duration_sec
         start_min, start_sec = divmod(int(ts_start), 60)
         end_min, end_sec = divmod(int(ts_end), 60)
 
@@ -723,10 +725,11 @@ def _check_highlight(
         )
 
         # Schedule async candidate creation on the event loop
+        from .ws_manager import _get_or_create_loop
+
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                asyncio.ensure_future(_auto_create_candidate(candidate_data))
+            loop = _get_or_create_loop()
+            asyncio.run_coroutine_threadsafe(_auto_create_candidate(candidate_data), loop)
         except RuntimeError:
             _debug(
                 "highlight_candidate_schedule_failed",
