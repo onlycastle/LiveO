@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 
-const API_URL =
-  (() => {
-    const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
-    if (configured) {
-      return configured;
-    }
-    if (typeof window === "undefined") {
-      return "http://127.0.0.1:8000";
-    }
-    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
-    return `${protocol}//${window.location.hostname}:8000`;
-  })();
+function getApiUrl() {
+  const configured = process.env.NEXT_PUBLIC_API_URL?.trim();
+  if (configured) {
+    return configured;
+  }
+  if (typeof window === "undefined") {
+    return "http://127.0.0.1:8000";
+  }
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${protocol}//${window.location.hostname}:8000`;
+}
 
 export function LandingScreen({
   onConnect,
@@ -25,6 +24,11 @@ export function LandingScreen({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectionLogs, setConnectionLogs] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const appendLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString("en-US", {
@@ -50,7 +54,7 @@ export function LandingScreen({
     appendLog(`POST /api/stream/start -> ${trimmed}`);
 
     try {
-      const res = await fetch(`${API_URL}/api/stream/start`, {
+      const res = await fetch(`${getApiUrl()}/api/stream/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ source: "demo", url: trimmed }),
@@ -157,7 +161,7 @@ export function LandingScreen({
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={url.trim() === "" || loading}
+                disabled={mounted ? url.trim() === "" || loading : undefined}
                 data-testid="landing-connect-button"
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-neon-lime/40 bg-neon-lime/10 text-[10px] font-mono font-bold text-neon-lime tracking-wider hover:bg-neon-lime/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >

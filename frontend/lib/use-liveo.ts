@@ -537,10 +537,10 @@ export function useLiveO() {
       }
       case "generate_failed": {
         const payload = data as { candidateId?: string; error?: string; jobId?: string };
-        appendFrontendLog("error", "generate_failed", "Short generation failed", {
+        const errorMsg = payload.error ?? "Unknown generation error";
+        appendFrontendLog("error", "generate_failed", errorMsg, {
           candidateId: payload.candidateId ?? null,
           jobId: payload.jobId ?? null,
-          error: payload.error ?? "Unknown generation error",
         });
         break;
       }
